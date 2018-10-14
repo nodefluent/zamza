@@ -1,0 +1,6 @@
+lib/
+example/
+test/
+.editorconfig
+.gitignore
+tslint.json
