@@ -4,3 +4,4 @@ test/
 .editorconfig
 .gitignore
 tslint.json
+tsconfig.json

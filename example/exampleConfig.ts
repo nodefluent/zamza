@@ -1,6 +1,7 @@
 
 const zamzaConfig = {
     kafka: {},
+    discovery: {},
 };
 
 export {
