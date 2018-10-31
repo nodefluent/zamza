@@ -3,14 +3,14 @@
 import * as EventEmitter from "events";
 import * as Debug from "debug";
 import * as murmur from "murmurhash";
-import { ZamzaConfig } from "../interfaces";
+import { DiscoveryConfig } from "../interfaces";
 
 const debug = Debug("zamza:discovery");
 const DEFAULT_DISCOVER_MS: number = 15000;
 
 export default class Discovery extends EventEmitter {
 
-    private config: ZamzaConfig;
+    private config: DiscoveryConfig;
     private kafkaClient?: null | any;
     private scanTimeout: null | any;
     private lastTopicsHash: null | number;
@@ -18,7 +18,7 @@ export default class Discovery extends EventEmitter {
 
     public isActive: boolean;
 
-    constructor(config: ZamzaConfig) {
+    constructor(config: DiscoveryConfig) {
         super();
 
         this.config = config;
@@ -28,8 +28,6 @@ export default class Discovery extends EventEmitter {
 
         this.lastTopicsHash = null;
         this.discoveredTopics = [];
-
-        // TODO: might want to cleanup on deleted-topics event
     }
 
     private static arrayToFixedHash(array: string[]): number {
@@ -38,7 +36,7 @@ export default class Discovery extends EventEmitter {
 
     public async start(kafkaClient: any, discoverFields = false) {
 
-        if (!this.config.discovery || !this.config.discovery.enabled) {
+        if (!this.config || !this.config.enabled) {
             return debug("Discovery not running.");
         }
 
@@ -61,7 +59,7 @@ export default class Discovery extends EventEmitter {
             debug("Discovery failed", error.message);
         }
 
-        this.scanTimeout = setTimeout(this.discover.bind(this), this.config.discovery.scanMs || DEFAULT_DISCOVER_MS);
+        this.scanTimeout = setTimeout(this.discover.bind(this), this.config.scanMs || DEFAULT_DISCOVER_MS);
     }
 
     private async discoverTopics() {
@@ -74,8 +72,8 @@ export default class Discovery extends EventEmitter {
         }
 
         let blacklist: string[] = [];
-        if (this.config.discovery && Array.isArray(this.config.discovery.topicBlacklist)) {
-            blacklist = JSON.parse(JSON.stringify(this.config.discovery.topicBlacklist));
+        if (this.config && Array.isArray(this.config.topicBlacklist)) {
+            blacklist = JSON.parse(JSON.stringify(this.config.topicBlacklist));
         }
 
         topics = topics.filter((topic: string) => blacklist.indexOf(topic) === -1);

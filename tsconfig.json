@@ -12,7 +12,8 @@
     "strict": true,
     "outDir": "dist/",
     "declaration": true,
-    "declarationMap": true
+    "declarationMap": true,
+    "resolveJsonModule": true
   },
   "exclude": [
     "./coverage",

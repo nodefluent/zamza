@@ -1,6 +1,6 @@
 {
   "name": "zamza",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Apache Kafka discovery, indexing, searches and storage",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -8,26 +8,32 @@
   "author": "Christian Froehlingsdorf <chris@5cf.de>",
   "license": "SEE LICENSE IN ./LICENSE",
   "private": false,
-  "dependencies": {
-    "debug": "~3.1.0",
-    "murmurhash": "^0.0.2"
-  },
-  "devDependencies": {
-    "@types/debug": "~0.0.30",
-    "@types/murmurhash": "^0.0.0",
-    "@types/node": "~10.5.1",
-    "mocha": "~5.2.0",
-    "tslint": "~5.10.0",
-    "typescript": "~2.9.2"
-  },
   "scripts": {
+    "tsv": "tsc -v",
     "fix": "tslint -c tslint.json --fix '**/*.ts'",
     "prepublishOnly": "yarn build",
     "build": "yarn lint && rm -rf dist/ && tsc -p tsconfig.json",
     "_start": "DEBUG=zamza:* node dist/example/index.js",
     "start": "yarn build && yarn _start",
-    "lint": "tslint -c tslint.json '**/*.ts'",
-    "test": "yarn build && ./node_modules/.bin/_mocha --recursive --timeout 30000 --exit -R spec test/int",
-    "test:debug": "yarn build && DEBUG=zamza:* ./node_modules/.bin/_mocha --recursive --timeout 30000 --exit -R spec test/int"
+    "lint": "tslint -c tslint.json '**/*.ts'"
+  },
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "cors": "^2.8.4",
+    "debug": "~4.1.0",
+    "express": "^4.16.4",
+    "mongoose": "^5.3.8",
+    "murmurhash": "^0.0.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.4",
+    "@types/debug": "^0.0.31",
+    "@types/express": "^4.16.0",
+    "@types/mongoose": "^5.2.22",
+    "@types/murmurhash": "^0.0.1",
+    "@types/node": "~10.12.1",
+    "mocha": "~5.2.0",
+    "tslint": "~5.11.0",
+    "typescript": "~3.1.4"
   }
 }

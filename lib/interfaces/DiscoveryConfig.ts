@@ -1,4 +1,3 @@
-
 export interface DiscoveryConfig {
     enabled?: boolean;
     fieldScanMs?: number;
