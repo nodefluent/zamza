@@ -67,6 +67,8 @@ export default class MongoWrapper {
 
     public close() {
 
+        debug("Closing..");
+
         if (mongoose.connection) {
             mongoose.connection.close();
         }

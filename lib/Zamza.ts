@@ -7,7 +7,7 @@ import HttpServer from "./api/HttpServer";
 
 import { ZamzaConfig } from "./interfaces";
 
-const GRACE_EXIT_MS = 1500;
+const GRACE_EXIT_MS = 1250;
 
 export default class Zamza {
 
@@ -30,7 +30,7 @@ export default class Zamza {
     private shutdownOnErrorIfNotProduction() {
 
         if (!Zamza.isProduction()) {
-            debug("Shutting down in", GRACE_EXIT_MS, "ms");
+            debug("Shutting down (because of error) in", GRACE_EXIT_MS, "ms");
             this.close();
             setTimeout(() => {
                 process.exit(1);
@@ -38,7 +38,22 @@ export default class Zamza {
         }
     }
 
+    private shutdownGracefully() {
+
+        debug("\nShutting down gracefully in", GRACE_EXIT_MS, "ms");
+        this.close();
+        debug("Bye..");
+
+        setTimeout(() => {
+            process.exit(0);
+        }, GRACE_EXIT_MS);
+    }
+
     private init() {
+
+        process.on("SIGINT", this.shutdownGracefully.bind(this));
+        process.on("SIGUSR1", this.shutdownGracefully.bind(this));
+        process.on("SIGUSR2", this.shutdownGracefully.bind(this));
 
         process.on("uncaughtException", (error: Error) => {
             debug("Unhandled Exception: ", error.message, error.stack);
