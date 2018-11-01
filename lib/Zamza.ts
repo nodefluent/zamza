@@ -4,6 +4,8 @@ const debug = Debug("zamza:zamza");
 import MongoWrapper from "./db/MongoWrapper";
 import Discovery from "./kafka/Discovery";
 import HttpServer from "./api/HttpServer";
+import MessageHandler from "./MessageHandler";
+import Consumer from "./kafka/Consumer";
 
 import { ZamzaConfig } from "./interfaces";
 
@@ -12,15 +14,19 @@ const GRACE_EXIT_MS = 1250;
 export default class Zamza {
 
     private readonly config: ZamzaConfig;
-    private readonly mongoWrapper: MongoWrapper;
-    private readonly discovery: Discovery;
     private readonly httpServer: HttpServer;
+    private readonly consumer: Consumer;
+    public readonly messageHandler: MessageHandler;
+    public readonly mongoWrapper: MongoWrapper;
+    public readonly discovery: Discovery;
 
     constructor(config: ZamzaConfig) {
         this.config = config;
         this.mongoWrapper = new MongoWrapper(this.config.mongo);
         this.discovery = new Discovery(this.config.discovery);
         this.httpServer = new HttpServer(this.config.http, this);
+        this.consumer = new Consumer(this.config.kafka, this);
+        this.messageHandler = new MessageHandler(this);
     }
 
     public static isProduction(): boolean {
@@ -78,18 +84,20 @@ export default class Zamza {
         debug("Starting..");
 
         await this.mongoWrapper.start();
-        // TODO: kafka client await this.discovery.start();
+        await this.consumer.start();
+        await this.discovery.start(this.consumer.getKafkaClient());
         await this.httpServer.start();
 
         debug("Running..");
     }
 
-    public close() {
+    public async close() {
 
         debug("Closing..");
 
         this.mongoWrapper.close();
         this.discovery.close();
         this.httpServer.close();
+        await this.consumer.close();
     }
 }

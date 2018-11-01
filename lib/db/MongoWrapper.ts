@@ -1,4 +1,3 @@
-
 import * as Debug from "debug";
 const debug = Debug("zamza:mongo");
 

@@ -23,7 +23,8 @@
     "debug": "~4.1.0",
     "express": "^4.16.4",
     "mongoose": "^5.3.8",
-    "murmurhash": "^0.0.2"
+    "murmurhash": "^0.0.2",
+    "sinek": "^6.23.4"
   },
   "devDependencies": {
     "@types/cors": "^2.8.4",

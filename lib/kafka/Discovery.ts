@@ -1,9 +1,8 @@
-"use strict";
-
 import * as EventEmitter from "events";
 import * as Debug from "debug";
 import * as murmur from "murmurhash";
 import { DiscoveryConfig } from "../interfaces";
+import { NConsumer } from "sinek";
 
 const debug = Debug("zamza:discovery");
 const DEFAULT_DISCOVER_MS: number = 15000;
@@ -11,7 +10,7 @@ const DEFAULT_DISCOVER_MS: number = 15000;
 export default class Discovery extends EventEmitter {
 
     private config: DiscoveryConfig;
-    private kafkaClient?: null | any;
+    private kafkaClient: NConsumer | null;
     private scanTimeout: null | any;
     private lastTopicsHash: null | number;
     private discoveredTopics: string[];
@@ -34,24 +33,28 @@ export default class Discovery extends EventEmitter {
         return murmur.v3(array.sort().join(":"), 0);
     }
 
-    public async start(kafkaClient: any, discoverFields = false) {
+    public async start(kafkaClient: NConsumer | null) {
+
+        if (!kafkaClient) {
+            return debug("Cannot start discovery, without kafka client.");
+        }
 
         if (!this.config || !this.config.enabled) {
             return debug("Discovery not running.");
         }
 
-        debug("Discovery is configured, starting.. discoverFields:", discoverFields);
+        debug("Discovery is configured, starting..");
 
         this.kafkaClient = kafkaClient;
 
-        this.discover(discoverFields).catch((error) => {
+        this.discover().catch((error) => {
             debug("Failed to start discover process", error.message);
         });
 
         this.isActive = true;
     }
 
-    private async discover(discoverFields = false) {
+    private async discover() {
 
         try {
             await this.discoverTopics();
@@ -63,6 +66,10 @@ export default class Discovery extends EventEmitter {
     }
 
     private async discoverTopics() {
+
+        if (!this.kafkaClient) {
+            return false;
+        }
 
         let topics = await this.kafkaClient.getTopicList();
 

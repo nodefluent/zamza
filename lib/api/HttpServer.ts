@@ -10,7 +10,7 @@ import * as pjson from "../../package.json";
 
 import Zamza from "../Zamza";
 import { HttpConfig } from "../interfaces";
-import { routeRoot } from "./routes";
+import { routeRoot, routeTopicConfigCrud } from "./routes";
 
 const DEFAULT_PORT = 8044;
 
@@ -39,6 +39,7 @@ export default class HttpServer {
         app.use(bodyParser.json());
 
         app.use("/", routeRoot(this.zamza));
+        app.use("/api/topic-config", routeTopicConfigCrud(this.zamza));
 
         this.server = await new Promise((resolve, reject) => {
             let server: any = null;
