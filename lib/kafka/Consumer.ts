@@ -53,11 +53,18 @@ export default class Consumer {
         return this.consumer ? this.consumer.getStats() : {};
     }
 
+    public getTopicMetadata(): Promise<Array<{name: string, configs: null, partitions: any[]}>> {
+        return this.consumer ? this.consumer.getMetadata(1000).then((metadata) => {
+            return metadata.asTopicDescription();
+        }) : Promise.resolve([]);
+    }
+
     public async close() {
 
         debug("Closing..");
         if (this.consumer) {
             await this.consumer.close(true);
+            this.consumer = null;
         }
     }
 }

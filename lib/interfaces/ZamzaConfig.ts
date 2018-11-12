@@ -7,4 +7,8 @@ export interface ZamzaConfig {
     discovery: DiscoveryConfig;
     mongo: MongoConfig;
     http: HttpConfig;
+    jobs?: {
+        cleanUpDeleteTimeoutMs?: number;
+        topicConfigPollingMs?: number;
+    };
 }

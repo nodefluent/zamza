@@ -29,7 +29,7 @@ export default class Discovery extends EventEmitter {
         this.discoveredTopics = [];
     }
 
-    private static arrayToFixedHash(array: string[]): number {
+    public static arrayToFixedHash(array: string[]): number {
         return murmur.v3(array.sort().join(":"), 0);
     }
 

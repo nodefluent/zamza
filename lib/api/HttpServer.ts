@@ -1,4 +1,3 @@
-
 import * as Debug from "debug";
 const debug = Debug("zamza:http");
 
@@ -10,7 +9,8 @@ import * as pjson from "../../package.json";
 
 import Zamza from "../Zamza";
 import { HttpConfig } from "../interfaces";
-import { routeRoot, routeTopicConfigCrud } from "./routes";
+import { routeRoot, routeTopicConfigCrud, routeInfo, routeFetch } from "./routes";
+import AccessControll from "./AccessControll";
 
 const DEFAULT_PORT = 8044;
 
@@ -19,11 +19,13 @@ export default class HttpServer {
     private readonly config: HttpConfig;
     private readonly zamza: Zamza;
     private server: any;
+    private readonly accessControll: AccessControll;
 
     constructor(config: HttpConfig, zamza: Zamza) {
         this.config = config;
         this.zamza = zamza;
         this.server = null;
+        this.accessControll = new AccessControll(this.config.access);
     }
 
     public async start() {
@@ -37,9 +39,15 @@ export default class HttpServer {
 
         app.use(cors());
         app.use(bodyParser.json());
+        app.use((req, res, next) => {
+            res.locals.access = this.accessControll;
+            next();
+        });
 
         app.use("/", routeRoot(this.zamza));
         app.use("/api/topic-config", routeTopicConfigCrud(this.zamza));
+        app.use("/api/info", routeInfo(this.zamza));
+        app.use("/api/fetch", routeFetch(this.zamza));
 
         this.server = await new Promise((resolve, reject) => {
             let server: any = null;

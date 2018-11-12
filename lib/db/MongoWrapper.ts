@@ -16,6 +16,18 @@ export default class MongoWrapper {
     constructor(config: MongoConfig) {
         this.config = config;
         this.models = {};
+        this.loadModels();
+    }
+
+    private loadModels() {
+
+        Object.keys(Models)
+        .map((key: string) => (Models as any)[key])
+        .forEach((modelConstructor) => {
+            const model = new modelConstructor();
+            model.registerModel(mongoose, Schema);
+            this.models[model.name] = model;
+        });
     }
 
     private connect() {
@@ -42,17 +54,7 @@ export default class MongoWrapper {
     }
 
     public async start() {
-
         await this.connect();
-
-        Object.keys(Models)
-        .map((key: string) => (Models as any)[key])
-        .forEach((modelConstructor) => {
-            const model = new modelConstructor();
-            model.registerModel(mongoose, Schema);
-            this.models[model.name] = model;
-        });
-
         return true;
     }
 

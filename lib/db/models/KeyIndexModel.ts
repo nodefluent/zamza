@@ -1,9 +1,9 @@
 import * as Debug from "debug";
+import * as murmur from "murmurhash";
 const debug = Debug("zamza:model:keyindex");
 
-import * as murmur from "murmurhash";
-
-import { KafkaMessage } from "../../interfaces";
+import { KeyIndex } from "../../interfaces";
+import moment = require("moment");
 
 export class KeyIndexModel {
 
@@ -26,6 +26,7 @@ export class KeyIndexModel {
             keyValue: Buffer,
             value: Buffer,
             timestampValue: Buffer,
+            deleteAt: Number,
         };
 
         const schema = new schemaConstructor(schemaDefinition);
@@ -37,20 +38,11 @@ export class KeyIndexModel {
         return murmur.v3(value, 0);
     }
 
-    public upsert(message: KafkaMessage, timestamp: number = Date.now()): Promise<object> {
+    public insert(document: KeyIndex): Promise<KeyIndex> {
+        return this.model.create(document);
+    }
 
-        const document = {
-            key: message.key ? this.hash(message.key.toString()) : null,
-            topic: this.hash(message.topic),
-            timestamp,
-            partition: message.partition,
-            offset: message.offset,
-            keyValue: message.key,
-            value: message.value,
-            timestampValue: message.timestamp ? Buffer.from(message.timestamp + "") : null,
-        };
-
-        // TODO: need to get topic config here to determine compact or deletion policy as this changes storage
+    public upsert(document: KeyIndex): Promise<KeyIndex> {
 
         const query = {
             key: document.key,
@@ -64,14 +56,24 @@ export class KeyIndexModel {
         return this.model.findOneAndUpdate(query, document, queryOptions);
     }
 
-    /*
-    cleanValuesOfEventForRetention(topic, field, retentionSeconds){
-        const key = this._getKey(topic, field);
+    public removeOldDeletePolicyEntries() {
         return this.model.remove({
-            key,
-            produced: { $lte: Date.now() - retentionSeconds * 1000 },
+            deleteAt: {
+                // $and doesnt work
+                // comparison operators only perform comparisons on fields
+                // where the BSON type matches the query value’s type
+                // should therefor ignore 'null' values
+                $lte: moment().valueOf(),
+            },
         });
-    }*/
+    }
+
+    public deleteForTopic(topic: string) {
+        debug("Deleting all entries for topic", topic);
+        return this.model.remove({
+            topic: this.hash(topic),
+        });
+    }
 
     public truncateCollection() {
         debug("Truncating collection");

@@ -54,6 +54,16 @@ const zamzaConfig = {
     },
     http: {
         port: 8044,
+        // access: "*" is default
+        access: {
+            token1: ["topic1", "topic2"],
+            token2: ["topic3"],
+            token3: "*", // any access, also allows to change topic config
+        },
+    },
+    jobs: {
+        cleanUpDeleteTimeoutMs: 60000,
+        topicConfigPollingMs: 15000,
     },
 };
 
