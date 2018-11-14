@@ -12,7 +12,7 @@ import { HttpConfig } from "../interfaces";
 import { routeRoot, routeTopicConfigCrud, routeInfo, routeFetch } from "./routes";
 import AccessControll from "./AccessControll";
 
-const DEFAULT_PORT = 8044;
+const DEFAULT_PORT = 1912;
 
 export default class HttpServer {
 

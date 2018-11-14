@@ -1,7 +1,7 @@
 {
   "name": "zamza",
   "version": "0.4.0",
-  "description": "Apache Kafka discovery, indexing, searches and storage",
+  "description": "Apache Kafka discovery, indexing, searches, storage, hooks and HTTP gateway",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "repository": "git@github.com:nodefluent/zamza.git",
@@ -15,10 +15,42 @@
     "build": "yarn lint && rm -rf dist/ && tsc -p tsconfig.json",
     "_start": "DEBUG=zamza:* node dist/example/index.js",
     "start": "yarn build && yarn _start",
-    "lint": "tslint -c tslint.json '**/*.ts'"
+    "lint": "tslint -c tslint.json '**/*.ts'",
+    "i:self": "./scripts/self-install.sh",
+    "i:update": "./scripts/self-update.sh"
   },
+  "keywords": [
+    "apache",
+    "kafka",
+    "event",
+    "streaming",
+    "storage",
+    "database",
+    "metrics",
+    "stats",
+    "info",
+    "information",
+    "analysis",
+    "rest",
+    "http",
+    "get",
+    "call",
+    "fetch",
+    "zamza",
+    "franz",
+    "georg",
+    "samsa",
+    "nodefluent",
+    "http",
+    "gateway",
+    "search",
+    "index",
+    "find",
+    "seek"
+  ],
   "dependencies": {
     "body-parser": "~1.18.3",
+    "commander": "~2.19.0",
     "cors": "~2.8.4",
     "debug": "~4.1.0",
     "express": "~4.16.4",
@@ -39,5 +71,9 @@
     "mocha": "~5.2.0",
     "tslint": "~5.11.0",
     "typescript": "~3.1.4"
+  },
+  "preferGlobal": true,
+  "bin": {
+    "zamza": "bin/zamza.js"
   }
 }

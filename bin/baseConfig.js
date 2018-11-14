@@ -1,12 +1,10 @@
-
-const zamzaConfig = {
+module.exports = {
     kafka: {
         consumer: {
             noptions: {
                 "metadata.broker.list": "localhost:9092",
-                "group.id": "zamza-example-group",
+                "group.id": "zamza-base-group",
                 "event_cb": false,
-                // "compression.codec": "snappy",
                 "api.version.request": true,
                 "socket.keepalive.enable": true,
                 "socket.blocking.max.ms": 100,
@@ -14,20 +12,20 @@ const zamzaConfig = {
                 "heartbeat.interval.ms": 250,
                 "retry.backoff.ms": 250,
                 "fetch.min.bytes": 100,
-                "fetch.message.max.bytes": 2 * 1024 * 1024,
+                "fetch.message.max.bytes": 6 * 1024 * 1024,
                 "queued.min.messages": 100,
                 "fetch.error.backoff.ms": 100,
-                "queued.max.messages.kbytes": 50,
+                "queued.max.messages.kbytes": 500,
                 "fetch.wait.max.ms": 1000,
                 "queue.buffering.max.ms": 1000,
-                "batch.num.messages": 10000,
+                "batch.num.messages": 50000,
             },
             tconf: {
                 "auto.offset.reset": "earliest",
             },
         },
         batchOptions: {
-            batchSize: 500,
+            batchSize: 2500,
             commitEveryNBatch: 1,
             concurrency: 1,
             commitSync: false,
@@ -40,7 +38,7 @@ const zamzaConfig = {
         topicBlacklist: [],
     },
     mongo: {
-        url: "mongodb://localhost:27017/zamza_example",
+        url: "mongodb://localhost:27017/zamza_base",
         options: {
             keepAlive: 120,
             autoIndex: true,
@@ -51,19 +49,10 @@ const zamzaConfig = {
     },
     http: {
         port: 1912,
-        // access: "*" is default
-        access: {
-            token1: ["topic1", "topic2"],
-            token2: ["topic3"],
-            token3: "*", // any access, also allows to change topic config
-        },
+        access: "*",
     },
     jobs: {
         cleanUpDeleteTimeoutMs: 60000,
         topicConfigPollingMs: 15000,
     },
-};
-
-export {
-    zamzaConfig,
 };

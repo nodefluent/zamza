@@ -18,6 +18,7 @@
   "exclude": [
     "./coverage",
     "./node_modules",
-    "./dist"
+    "./dist",
+    "./bin"
   ]
 }

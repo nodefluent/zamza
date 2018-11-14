@@ -5,3 +5,5 @@ test/
 .gitignore
 tslint.json
 tsconfig.json
+scripts/
+*.tgz
