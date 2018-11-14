@@ -3,15 +3,18 @@ const debug = Debug("zamza:cleanupjob");
 
 import Zamza from "../Zamza";
 import { KeyIndexModel } from "./models";
+import { Metrics } from "../Metrics";
 
 export default class CleanUpDeleteJob {
 
-    public readonly keyIndexModel: KeyIndexModel;
+    private readonly keyIndexModel: KeyIndexModel;
+    private readonly metrics: Metrics;
     private t: any;
     private halt: boolean;
 
     constructor(zamza: Zamza) {
         this.keyIndexModel = zamza.mongoWrapper.getKeyIndexModel();
+        this.metrics = zamza.metrics;
         this.t = null;
         this.halt = false;
     }
@@ -47,9 +50,12 @@ export default class CleanUpDeleteJob {
     }
 
     private async job() {
+        this.metrics.inc("job_clean_up_ran");
         const startTime = Date.now();
         await this.keyIndexModel.removeOldDeletePolicyEntries();
         const duration = Date.now() - startTime;
         debug("ran, took", duration, "ms");
+        this.metrics.inc("job_clean_up_ran_success");
+        this.metrics.set("job_clean_up_ms", duration);
     }
 }

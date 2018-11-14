@@ -8,6 +8,10 @@ const routeInfo = (zamza: Zamza) => {
     const discovery = zamza.discovery;
     const consumer = zamza.consumer;
 
+    router.get("/consumer", async (req, res) => {
+        res.status(200).json(await consumer.getKafkaStats());
+    });
+
     router.get("/topics", async (req, res) => {
         res.status(200).json(await consumer.getTopicMetadata());
     });

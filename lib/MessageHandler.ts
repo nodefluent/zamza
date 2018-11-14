@@ -7,6 +7,7 @@ import Zamza from "./Zamza";
 import { KafkaMessage } from "sinek";
 import MongoPoller from "./db/MongoPoller";
 import { KeyIndexModel } from "./db/models";
+import { Metrics } from "./Metrics";
 import { KeyIndex } from "./interfaces";
 import { TopicConfig } from "./interfaces/TopicConfig";
 
@@ -14,10 +15,12 @@ export default class MessageHandler {
 
     private readonly mongoPoller: MongoPoller;
     private readonly keyIndexModel: KeyIndexModel;
+    private readonly metrics: Metrics;
 
     constructor(zamza: Zamza) {
         this.mongoPoller = zamza.mongoPoller;
         this.keyIndexModel = zamza.mongoWrapper.getKeyIndexModel();
+        this.metrics = zamza.metrics;
     }
 
     private hash(value: string): number {
@@ -36,7 +39,20 @@ export default class MessageHandler {
         return null;
     }
 
+    private cleanTopicNameForMetrics(topic: string): string {
+        return topic.replace(/-/g, "_");
+    }
+
     public async handleMessage(message: KafkaMessage): Promise<boolean> {
+
+        this.metrics.inc("processed_messages");
+
+        if (!message || !message.topic || typeof message.topic !== "string") {
+            debug("Dropping message because of bad format, not an object or no topic", message);
+            return false;
+        }
+
+        this.metrics.inc(`processed_messages_topic_${this.cleanTopicNameForMetrics(message.topic)}`);
 
         const startTime = Date.now();
 
@@ -50,7 +66,7 @@ export default class MessageHandler {
         const keyIndex: KeyIndex = {
             key: keyAsString ? this.hash(keyAsString) : null,
             topic: this.hash(message.topic),
-            timestamp: Date.now(),
+            timestamp: moment().valueOf(),
             partition: message.partition,
             offset: message.offset,
             keyValue: keyAsBuffer,
@@ -61,6 +77,7 @@ export default class MessageHandler {
 
         const topicConfig = this.findConfigForTopic(message.topic);
         if (!topicConfig) {
+            this.metrics.inc("processed_messages_failed_no_config");
             debug("Cannot process message, because no config was found for topic", message.topic);
             return false;
         }
@@ -69,23 +86,27 @@ export default class MessageHandler {
         switch (topicConfig.cleanupPolicy) {
 
             case "compact":
+                this.metrics.inc("processed_messages_compact");
                 await this.keyIndexModel.upsert(keyIndex);
                 break;
 
             case "delete":
+                this.metrics.inc("processed_messages_delete");
                 keyIndex.deleteAt = moment().add(topicConfig.segmentMs, "milliseconds").valueOf();
                 await this.keyIndexModel.insert(keyIndex);
                 break;
 
             default:
             case "none":
+                this.metrics.inc("processed_messages_none");
                 await this.keyIndexModel.insert(keyIndex);
                 break;
         }
 
         const duration = Date.now() - startTime;
-        // TODO: metrics
+        this.metrics.set("processed_message_ms", duration);
 
+        this.metrics.inc("processed_messages_success");
         return true;
     }
 }

@@ -25,7 +25,7 @@ export default class HttpServer {
         this.config = config;
         this.zamza = zamza;
         this.server = null;
-        this.accessControll = new AccessControll(this.config.access);
+        this.accessControll = new AccessControll(this.config.access, this.zamza.metrics);
     }
 
     public async start() {
@@ -33,16 +33,19 @@ export default class HttpServer {
         const app = express();
 
         app.use((req, res, next) => {
+
+            this.zamza.metrics.inc("http_calls");
+            if (req.url && req.url.startsWith("/api")) {
+                this.zamza.metrics.inc("api_calls");
+            }
+
             res.set("x-powered-by", `${pjson.name}/${pjson.version}`);
+            res.locals.access = this.accessControll;
             next();
         });
 
         app.use(cors());
         app.use(bodyParser.json());
-        app.use((req, res, next) => {
-            res.locals.access = this.accessControll;
-            next();
-        });
 
         app.use("/", routeRoot(this.zamza));
         app.use("/api/topic-config", routeTopicConfigCrud(this.zamza));

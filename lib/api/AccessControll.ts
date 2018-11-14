@@ -1,4 +1,5 @@
 import * as Debug from "debug";
+import { Metrics } from "../Metrics";
 const debug = Debug("zamza:access");
 
 const WILDCARD = "*";
@@ -6,9 +7,11 @@ const WILDCARD = "*";
 export default class AccessControll {
 
     private readonly accessConfig: any;
+    private readonly metrics: Metrics;
 
-    constructor(accessConfig: any) {
+    constructor(accessConfig: any, metrics: Metrics) {
         this.accessConfig = accessConfig;
+        this.metrics = metrics;
 
         if (!this.accessConfig || Object.keys(this.accessConfig).length <= 0) {
             debug("NOTE: Automatically switched access configuration to allow everything.");
@@ -59,54 +62,65 @@ export default class AccessControll {
     private topicAccessAllowedForToken(token: string | null, topic: string): boolean {
 
         if (this.accessConfig === WILDCARD) {
+            this.metrics.inc("access_good");
             return true;
         }
 
         if (!token) {
             debug("Topic access not allowed for token", token, "and topic", topic, "reason: no token.");
+            this.metrics.inc("access_bad");
             return false;
         }
 
         const configuration = this.accessConfig[token];
         if (!configuration) {
             debug("Topic access not allowed for token", token, "and topic", topic, "reason: no configuration.");
+            this.metrics.inc("access_bad");
             return false;
         }
 
         if (configuration === WILDCARD) {
+            this.metrics.inc("access_good");
             return true;
         }
 
         if (configuration.indexOf(topic) !== -1) {
+            this.metrics.inc("access_good");
             return true;
         }
 
         debug("Topic access not allowed for token", token, "and topic", topic, "reason: topic not allowed.");
+        this.metrics.inc("access_bad");
         return false;
     }
 
     private wildcardAccessAllowedForToken(token: string | null): boolean {
 
         if (this.accessConfig === WILDCARD) {
+            this.metrics.inc("access_good");
             return true;
         }
 
         if (!token) {
             debug("Topic access not allowed for token", token, "reason: no token.");
+            this.metrics.inc("access_bad");
             return false;
         }
 
         const configuration = this.accessConfig[token];
         if (!configuration) {
             debug("Topic access not allowed for token", token, "reason: no configuration.");
+            this.metrics.inc("access_bad");
             return false;
         }
 
         if (configuration === WILDCARD) {
+            this.metrics.inc("access_good");
             return true;
         }
 
         debug("Topic access not allowed for token", token, "reason: no wildcard.");
+        this.metrics.inc("access_bad");
         return false;
     }
 }

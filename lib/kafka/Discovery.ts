@@ -3,13 +3,15 @@ import * as Debug from "debug";
 import * as murmur from "murmurhash";
 import { DiscoveryConfig } from "../interfaces";
 import { NConsumer } from "sinek";
+import { Metrics } from "../Metrics";
 
 const debug = Debug("zamza:discovery");
 const DEFAULT_DISCOVER_MS: number = 15000;
 
 export default class Discovery extends EventEmitter {
 
-    private config: DiscoveryConfig;
+    private readonly config: DiscoveryConfig;
+    private readonly metrics: Metrics;
     private kafkaClient: NConsumer | null;
     private scanTimeout: null | any;
     private lastTopicsHash: null | number;
@@ -17,10 +19,11 @@ export default class Discovery extends EventEmitter {
 
     public isActive: boolean;
 
-    constructor(config: DiscoveryConfig) {
+    constructor(config: DiscoveryConfig, metrics: Metrics) {
         super();
 
         this.config = config;
+        this.metrics = metrics;
         this.kafkaClient = null;
         this.scanTimeout = null;
         this.isActive = false;
@@ -57,7 +60,9 @@ export default class Discovery extends EventEmitter {
     private async discover() {
 
         try {
+            this.metrics.inc("job_discover_ran");
             await this.discoverTopics();
+            this.metrics.inc("job_discover_ran_success");
         } catch (error) {
             debug("Discovery failed", error.message);
         }
@@ -94,6 +99,7 @@ export default class Discovery extends EventEmitter {
 
         debug("Topic hashes have changed old:", this.lastTopicsHash, "new:", newTopicsHash);
         this.lastTopicsHash = newTopicsHash;
+        this.metrics.inc("discovered_topics_changed");
 
         const newTopics: string[] = [];
         topics.forEach((topic: string) => {
@@ -104,6 +110,7 @@ export default class Discovery extends EventEmitter {
 
         debug("Discovered new topics", newTopics);
         this.emit("created-topics", newTopics);
+        this.metrics.inc("discovered_topics_created", newTopics.length);
 
         const deletedTopics: string[] = [];
         this.discoveredTopics.forEach((topic) => {
@@ -114,9 +121,11 @@ export default class Discovery extends EventEmitter {
 
         debug("Discovered deleted topics", deletedTopics);
         this.emit("deleted-topics", deletedTopics);
+        this.metrics.inc("discovered_topics_deleted", deletedTopics.length);
 
         this.discoveredTopics = topics;
         this.emit("discovered-topics", topics);
+        this.metrics.inc("discovered_topics_total", topics.length);
 
         return true;
     }
