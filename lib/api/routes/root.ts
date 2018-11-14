@@ -11,6 +11,10 @@ const routeRoot = (zamza: Zamza) => {
         });
     });
 
+    router.get("/doc", (req, res) => {
+        res.status(200).end("Coming soon..");
+    });
+
     router.get("/healthcheck", (req, res) => {
         res.status(zamza.isAlive() ? 200 : 503).end();
     });
