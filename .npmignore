@@ -7,3 +7,5 @@ tslint.json
 tsconfig.json
 scripts/
 *.tgz
+yarn-error.log
+index.ts

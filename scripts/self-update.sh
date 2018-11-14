@@ -1,4 +1,4 @@
 #!/bin/sh
 git pull
-yarn i:self
-zamza --version
+yarn pkg:i
+zamza -v

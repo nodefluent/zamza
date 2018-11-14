@@ -16,8 +16,8 @@
     "_start": "DEBUG=zamza:* node dist/example/index.js",
     "start": "yarn build && yarn _start",
     "lint": "tslint -c tslint.json '**/*.ts'",
-    "i:self": "./scripts/self-install.sh",
-    "i:update": "./scripts/self-update.sh"
+    "pkg:i": "./scripts/self-install.sh",
+    "pkg:u": "./scripts/self-update.sh"
   },
   "keywords": [
     "apache",

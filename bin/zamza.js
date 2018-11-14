@@ -4,8 +4,8 @@ const program = require("commander");
 const pjson = require("./../package.json");
 
 program
-    .version(pjson.version)
     .usage("[options] <file ..>")
+    .version(pjson.version, "-v, --version")
     .option("-p, --port <n>", "HttpServer port (optional)")
     .option("-l, --logs", "Log to stdout (optional)")
     .option("-j, --json", "Parses log output as JSON (optional)")
@@ -93,7 +93,7 @@ try {
 
 const readAndDisplayBanner = () => {
 
-    if(options.noBanner === true){
+    if(program.json){
         debug("Skipping banner..");
         return Promise.resolve();
     }
