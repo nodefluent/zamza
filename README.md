@@ -20,17 +20,17 @@
                                      @@&@@/ &    
 ```
 
-## What ?
+## What
 
 Apache Kafka discovery, indexing, searches, storage, hooks and HTTP gateway.
 
-## How ?
+## How
 
 You can manage topics to be indexed on the fly via `/api/topic-config` and 
 zamza will keep track of anything that goes through your Apache Kafka cluster.
 It will index and store messages in MongoDB, according to the topic's `delete` or `compact` configuration. You can find and retrieve messages in milliseconds via `/api/fetch`. Zamza also allows you to register HTTP hooks to subscribe to topics, as well as HTTP calls to produce to Kafka topics.
 
-## Why ?
+## Why
 
 There are some tools out there that help developers to browse Kafka topics,
 like `kafka-rest-ui` or `Java Kafka Tool`, however they provide a very poor experience to their users, as they either require an annoying secret management, when working with production clusters (SASL-SSL) or are just very unresponsive and slow, because they are built upon a backend that spins up kafka consumers, which fetch with timeouts.
