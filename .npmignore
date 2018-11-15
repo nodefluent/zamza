@@ -9,3 +9,9 @@ scripts/
 *.tgz
 yarn-error.log
 index.ts
+*.map
+Dockerfile
+CHANGELOG.md
+docker-compose.yml
+dockertest.sh
+bin/docker.json
