@@ -70,11 +70,8 @@ You can monitor zamza via Prometheus at `http://localhost:1912/metrics`.
 
 ## Roadmap
 
-* Fetch endpoints for KeyIndexModel
 * apidoc
-* docker
 * consume hooks v1
-* produce endpoints
 * more metadata information (Zookeeper <- brokers and configs)
 * consume hooks v2
 

@@ -7,6 +7,7 @@ const routeInfo = (zamza: Zamza) => {
     const topicConfigModel = zamza.mongoWrapper.getTopicConfig();
     const discovery = zamza.discovery;
     const consumer = zamza.consumer;
+    const producer = zamza.producer;
 
     router.get("/", (req, res) => {
         res.json({
@@ -14,6 +15,7 @@ const routeInfo = (zamza: Zamza) => {
             self: "/api/info",
             children: [
                 "/api/info/consumer",
+                "/api/info/producer",
                 "/api/info/topics",
                 "/api/info/topics/discovered",
                 "/api/info/topics/configured",
@@ -24,6 +26,10 @@ const routeInfo = (zamza: Zamza) => {
 
     router.get("/consumer", async (req, res) => {
         res.status(200).json(await consumer.getKafkaStats());
+    });
+
+    router.get("/producer", async (req, res) => {
+        res.status(200).json(await producer.getKafkaStats());
     });
 
     router.get("/topics", async (req, res) => {

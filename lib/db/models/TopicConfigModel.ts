@@ -1,16 +1,20 @@
 import * as Debug from "debug";
 import { TopicConfig } from "../../interfaces/TopicConfig";
-import { exec } from "child_process";
 const debug = Debug("zamza:model:topicconfig");
+
+import Zamza from "../../Zamza";
+import { Metrics } from "../../Metrics";
 
 const ALLOWED_POLICIES = ["compact", "delete", "none"];
 
 export class TopicConfigModel {
 
+    public readonly metrics: Metrics;
     public readonly name: string;
     private model: any;
 
-    constructor() {
+    constructor(zamza: Zamza) {
+        this.metrics = zamza.metrics;
         this.name = "topicconfig";
         this.model = null;
     }

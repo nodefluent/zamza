@@ -9,7 +9,8 @@ import * as pjson from "../../package.json";
 
 import Zamza from "../Zamza";
 import { HttpConfig } from "../interfaces";
-import { routeRoot, routeTopicConfig, routeInfo, routeFetch } from "./routes";
+import { routeRoot, routeTopicConfig, routeInfo,
+         routeFetch, routeProduce } from "./routes";
 import AccessControll from "./AccessControll";
 
 const DEFAULT_PORT = 1912;
@@ -53,6 +54,7 @@ export default class HttpServer {
         app.use("/api/topic-config", routeTopicConfig(this.zamza));
         app.use("/api/info", routeInfo(this.zamza));
         app.use("/api/fetch", routeFetch(this.zamza));
+        app.use("/api/produce", routeProduce(this.zamza));
 
         this.server = await new Promise((resolve, reject) => {
             let server: any = null;

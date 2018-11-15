@@ -7,24 +7,25 @@ const Schema = mongoose.Schema;
 import { MongoConfig } from "../interfaces";
 import * as Models from "./models";
 import { KeyIndexModel, TopicConfigModel } from "./models";
+import Zamza from "../Zamza";
 
 export default class MongoWrapper {
 
     private readonly config: MongoConfig;
     private readonly models: any;
 
-    constructor(config: MongoConfig) {
+    constructor(config: MongoConfig, zamza: Zamza) {
         this.config = config;
         this.models = {};
-        this.loadModels();
+        this.loadModels(zamza);
     }
 
-    private loadModels() {
+    private loadModels(zamza: Zamza) {
 
         Object.keys(Models)
         .map((key: string) => (Models as any)[key])
         .forEach((modelConstructor) => {
-            const model = new modelConstructor();
+            const model = new modelConstructor(zamza);
             model.registerModel(mongoose, Schema);
             this.models[model.name] = model;
         });

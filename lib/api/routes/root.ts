@@ -28,6 +28,7 @@ const routeRoot = (zamza: Zamza) => {
                 "/api/info",
                 "/api/fetch",
                 "/api/topic-config",
+                "/api/produce",
             ],
         });
     });

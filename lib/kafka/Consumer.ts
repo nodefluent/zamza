@@ -10,11 +10,22 @@ export default class Consumer {
     private readonly config: KafkaConfig;
     private readonly zamza: Zamza;
     private consumer: NConsumer | null;
+    private consumedLately: number = 0;
+    private intv: any;
 
     constructor(config: KafkaConfig, zamza: Zamza) {
         this.config = config;
         this.zamza = zamza;
         this.consumer = null;
+
+        this.intv = setInterval(() => {
+
+            if (this.consumedLately > 0) {
+                debug("Consumed", this.consumedLately, "messages lately");
+                this.consumedLately = 0;
+            }
+
+        }, 15000);
     }
 
     public async start() {
@@ -25,6 +36,7 @@ export default class Consumer {
 
         await this.consumer.connect();
         this.consumer.consume(async (message, callback) => {
+            this.consumedLately++;
             try {
                 await this.zamza.messageHandler.handleMessage(message);
                 callback(null);
@@ -62,6 +74,11 @@ export default class Consumer {
     public async close() {
 
         debug("Closing..");
+
+        if (this.intv) {
+            clearInterval(this.intv);
+        }
+
         if (this.consumer) {
             await this.consumer.close(true);
             this.consumer = null;

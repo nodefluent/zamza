@@ -8,6 +8,7 @@ import Discovery from "./kafka/Discovery";
 import HttpServer from "./api/HttpServer";
 import MessageHandler from "./MessageHandler";
 import Consumer from "./kafka/Consumer";
+import Producer from "./kafka/Producer";
 import { Metrics } from "./Metrics";
 
 import { ZamzaConfig } from "./interfaces";
@@ -20,6 +21,7 @@ export default class Zamza {
     private readonly httpServer: HttpServer;
 
     public readonly consumer: Consumer;
+    public readonly producer: Producer;
     public readonly messageHandler: MessageHandler;
     public readonly mongoWrapper: MongoWrapper;
     public readonly mongoPoller: MongoPoller;
@@ -38,9 +40,10 @@ export default class Zamza {
 
         this.config = config;
         this.metrics = new Metrics("zamza");
-        this.mongoWrapper = new MongoWrapper(this.config.mongo);
+        this.mongoWrapper = new MongoWrapper(this.config.mongo, this);
         this.mongoPoller = new MongoPoller(this.mongoWrapper, this.metrics);
         this.discovery = new Discovery(this.config.discovery, this.metrics);
+        this.producer = new Producer(this.config.kafka, this);
         this.httpServer = new HttpServer(this.config.http, this);
         this.consumer = new Consumer(this.config.kafka, this);
         this.messageHandler = new MessageHandler(this);
@@ -103,6 +106,13 @@ export default class Zamza {
 
         this.metrics.registerDefault();
 
+        // its okay to start these first, as consumer not subscribe to anything until the
+        // poller told him about the configured topics
+        // NOTE: this is necessary, because consumer requires connection before adjusting subscriptions
+        await this.mongoWrapper.start();
+        await this.producer.start();
+        await this.consumer.start();
+
         this.mongoPoller.on("error", (error) => {
             debug("MongoDB polling error: " + error.message, error.stack);
         });
@@ -112,9 +122,7 @@ export default class Zamza {
             this.consumer.adjustSubscriptions(topics);
         });
 
-        await this.mongoWrapper.start();
         await this.mongoPoller.start(this.config.jobs ? this.config.jobs.topicConfigPollingMs : undefined);
-        await this.consumer.start();
         await this.discovery.start(this.consumer.getKafkaClient());
         await this.httpServer.start();
         this.cleanUpDeleteJob.start(this.config.jobs ? this.config.jobs.cleanUpDeleteTimeoutMs : undefined);
@@ -134,6 +142,7 @@ export default class Zamza {
         this.discovery.close();
         this.httpServer.close();
         await this.consumer.close();
+        await this.producer.close();
         this.mongoWrapper.close();
         this.metrics.close();
     }

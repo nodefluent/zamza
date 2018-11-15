@@ -1,16 +1,20 @@
 import * as Debug from "debug";
 import * as murmur from "murmurhash";
 const debug = Debug("zamza:model:keyindex");
+import moment = require("moment");
 
 import { KeyIndex } from "../../interfaces";
-import moment = require("moment");
+import Zamza from "../../Zamza";
+import { Metrics } from "../../Metrics";
 
 export class KeyIndexModel {
 
+    public readonly metrics: Metrics;
     public readonly name: string;
     private model: any;
 
-    constructor() {
+    constructor(zamza: Zamza) {
+        this.metrics = zamza.metrics;
         this.name = "keyindex";
         this.model = null;
     }
@@ -59,7 +63,7 @@ export class KeyIndexModel {
         return murmur.v3(value, 0);
     }
 
-    private static cleanMessageResultForResponse(message: KeyIndex):
+    private static cleanMessageResultForResponse(topic: string, message: KeyIndex):
         {topic: string, partition: number, offset: number, key: Buffer, value: Buffer, timestamp: number} {
 
         if (!message) {
@@ -67,20 +71,27 @@ export class KeyIndexModel {
         }
 
         const cleanedMessage: any = {};
-        cleanedMessage.topic = message.topic;
+
+        cleanedMessage.topic = topic; // cannot use message.topic, as its a hash
         cleanedMessage.partition = message.partition;
         cleanedMessage.offset = message.offset;
-        cleanedMessage.key = message.keyValue;
-        cleanedMessage.value = message.value;
-        cleanedMessage.timestamp = message.timestampValue;
+        cleanedMessage.key = message.keyValue ? message.keyValue.toString("utf8") : message.keyValue,
+        cleanedMessage.value = message.value ? message.value.toString("utf8") : message.value;
+        cleanedMessage.timestamp = message.timestampValue ?
+            parseInt(message.timestampValue.toString("utf8"), undefined) : message.timestampValue;
+
         return cleanedMessage;
     }
 
-    private static cleanMessageResultsForResponse(messages: KeyIndex[]) {
-        return messages.map(KeyIndexModel.cleanMessageResultForResponse);
+    private static cleanMessageResultsForResponse(topic: string, messages: KeyIndex[]) {
+        return messages.map((message) => {
+            return KeyIndexModel.cleanMessageResultForResponse(topic, message);
+        });
     }
 
     public async getInfoForTopic(topic: string) {
+
+        const startTime = Date.now();
 
         const partitions = await this.model.distinct("partition", {
             topic: this.hash(topic),
@@ -91,6 +102,9 @@ export class KeyIndexModel {
 
         const earliestMessage = 0;
         const latestMessage = 0;
+
+        const duration = Date.now() - startTime;
+        this.metrics.set("mongo_keyindex_info_ms", duration);
 
         return {
             topic,
@@ -104,17 +118,24 @@ export class KeyIndexModel {
 
     public async findMessageForKey(topic: string, key: string) {
 
+        const startTime = Date.now();
+
         const message = await this.model.findOne({
             topic: this.hash(topic),
             key: this.hash(key),
         }).lean().exec();
 
+        const duration = Date.now() - startTime;
+        this.metrics.set("mongo_keyindex_find_key_ms", duration);
+
         return {
-            result: KeyIndexModel.cleanMessageResultForResponse(message),
+            result: KeyIndexModel.cleanMessageResultForResponse(topic, message),
         };
     }
 
     public async findMessageForPartitionAndOffset(topic: string, partition: number, offset: number) {
+
+        const startTime = Date.now();
 
         const message = await this.model.findOne({
             topic: this.hash(topic),
@@ -122,12 +143,17 @@ export class KeyIndexModel {
             offset,
         }).lean().exec();
 
+        const duration = Date.now() - startTime;
+        this.metrics.set("mongo_keyindex_find_pof_ms", duration);
+
         return {
-            result: KeyIndexModel.cleanMessageResultForResponse(message),
+            result: KeyIndexModel.cleanMessageResultForResponse(topic, message),
         };
     }
 
     public async findMessageForTimestamp(topic: string, timestamp: number) {
+
+        const startTime = Date.now();
 
         // TODO: range this a little? use timestampValue???
         const message = await this.model.findOne({
@@ -135,8 +161,11 @@ export class KeyIndexModel {
             timestamp,
         }).lean().exec();
 
+        const duration = Date.now() - startTime;
+        this.metrics.set("mongo_keyindex_find_ts_ms", duration);
+
         return {
-            result: KeyIndexModel.cleanMessageResultForResponse(message),
+            result: KeyIndexModel.cleanMessageResultForResponse(topic, message),
         };
     }
 
@@ -150,18 +179,20 @@ export class KeyIndexModel {
 
     public async paginateThroughTopic(topic: string, skip: number = 0, limit: number = 50, order: number = -1) {
 
+        debug("Paginating from", skip, "to", skip + limit, "on topic", topic, "order", order);
+        const startTime = Date.now();
+
         const messages = await this.model.find({
             topic: this.hash(topic),
-        }, {
-            skip,
-            limit,
-            sort: {
-                timestamp: order,
-            },
+        }).skip(skip).limit(limit).sort({
+            timestamp: order,
         }).lean().exec();
 
+        const duration = Date.now() - startTime;
+        this.metrics.set("mongo_keyindex_paginate_ms", duration);
+
         return {
-            results: KeyIndexModel.cleanMessageResultsForResponse(messages),
+            results: KeyIndexModel.cleanMessageResultsForResponse(topic, messages),
         };
     }
 
@@ -173,11 +204,21 @@ export class KeyIndexModel {
         return this.paginateThroughTopic(topic, 0, range, -1);
     }
 
-    public insert(document: KeyIndex): Promise<KeyIndex> {
-        return this.model.create(document).exec();
+    public async insert(document: KeyIndex): Promise<KeyIndex> {
+
+        const startTime = Date.now();
+
+        const result = await this.model.create(document);
+
+        const duration = Date.now() - startTime;
+        this.metrics.set("mongo_keyindex_insert_ms", duration);
+
+        return result;
     }
 
-    public upsert(document: KeyIndex): Promise<KeyIndex> {
+    public async upsert(document: KeyIndex): Promise<KeyIndex> {
+
+        const startTime = Date.now();
 
         const query = {
             key: document.key,
@@ -188,7 +229,11 @@ export class KeyIndexModel {
             upsert: true,
         };
 
-        return this.model.findOneAndUpdate(query, document, queryOptions).exec();
+        const result = await this.model.findOneAndUpdate(query, document, queryOptions).exec();
+        const duration = Date.now() - startTime;
+        this.metrics.set("mongo_keyindex_upsert_ms", duration);
+
+        return result;
     }
 
     public removeOldDeletePolicyEntries() {

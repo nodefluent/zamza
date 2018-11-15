@@ -51,6 +51,7 @@ export default class MongoPoller extends EventEmitter {
         // poll once initially
         await this.onInterval();
         this.emit("updated", this.collected);
+        debug("Initial poll done.");
     }
 
     public close() {
