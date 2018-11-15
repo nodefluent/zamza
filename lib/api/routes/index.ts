@@ -1,4 +1,4 @@
 export * from "./root";
-export * from "./topicConfigCrud";
+export * from "./topic-config";
 export * from "./info";
 export * from "./fetch";

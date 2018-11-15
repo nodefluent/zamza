@@ -8,6 +8,20 @@ const routeInfo = (zamza: Zamza) => {
     const discovery = zamza.discovery;
     const consumer = zamza.consumer;
 
+    router.get("/", (req, res) => {
+        res.json({
+            parent: "/api",
+            self: "/api/info",
+            children: [
+                "/api/info/consumer",
+                "/api/info/topics",
+                "/api/info/topics/discovered",
+                "/api/info/topics/configured",
+                "/api/info/topics/available",
+            ],
+        });
+    });
+
     router.get("/consumer", async (req, res) => {
         res.status(200).json(await consumer.getKafkaStats());
     });

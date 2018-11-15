@@ -9,7 +9,7 @@ import * as pjson from "../../package.json";
 
 import Zamza from "../Zamza";
 import { HttpConfig } from "../interfaces";
-import { routeRoot, routeTopicConfigCrud, routeInfo, routeFetch } from "./routes";
+import { routeRoot, routeTopicConfig, routeInfo, routeFetch } from "./routes";
 import AccessControll from "./AccessControll";
 
 const DEFAULT_PORT = 1912;
@@ -32,6 +32,8 @@ export default class HttpServer {
 
         const app = express();
 
+        app.set("etag", false);
+
         app.use((req, res, next) => {
 
             this.zamza.metrics.inc("http_calls");
@@ -48,7 +50,7 @@ export default class HttpServer {
         app.use(bodyParser.json());
 
         app.use("/", routeRoot(this.zamza));
-        app.use("/api/topic-config", routeTopicConfigCrud(this.zamza));
+        app.use("/api/topic-config", routeTopicConfig(this.zamza));
         app.use("/api/info", routeInfo(this.zamza));
         app.use("/api/fetch", routeFetch(this.zamza));
 

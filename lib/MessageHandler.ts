@@ -63,16 +63,23 @@ export default class MessageHandler {
             typeof message.key === "string" ? message.key :
                 (Buffer.isBuffer(message.key) ? message.key.toString("utf8") : message.key + "");
 
+        // if the message has a timestamp (epoch) present, we will use it for retention, otherwise
+        // the time of db insertion will be used to determine ttl
+        const messageHasTimestamp = (message as any).timestamp && typeof (message as any).timestamp === "number";
+        const timeOfStoring = moment().valueOf();
+
         const keyIndex: KeyIndex = {
             key: keyAsString ? this.hash(keyAsString) : null,
             topic: this.hash(message.topic),
-            timestamp: moment().valueOf(),
+            timestamp: messageHasTimestamp ? (message as any).timestamp : timeOfStoring,
             partition: message.partition,
             offset: message.offset,
             keyValue: keyAsBuffer,
             value: Buffer.isBuffer(message.value) ? message.value : (message.value ? Buffer.from(message.value) : null),
-            timestampValue: (message as any).timestamp ? Buffer.from((message as any).timestamp + "") : null,
+            timestampValue: messageHasTimestamp ? Buffer.from((message as any).timestamp + "") : null,
             deleteAt: null,
+            fromStream: true,
+            storedAt: timeOfStoring,
         };
 
         const topicConfig = this.findConfigForTopic(message.topic);
@@ -92,7 +99,7 @@ export default class MessageHandler {
 
             case "delete":
                 this.metrics.inc("processed_messages_delete");
-                keyIndex.deleteAt = moment().add(topicConfig.segmentMs, "milliseconds").valueOf();
+                keyIndex.deleteAt = moment(keyIndex.timestamp).add(topicConfig.segmentMs, "milliseconds").valueOf();
                 await this.keyIndexModel.insert(keyIndex);
                 break;
 

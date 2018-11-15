@@ -104,7 +104,7 @@ export default class Zamza {
         this.metrics.registerDefault();
 
         this.mongoPoller.on("error", (error) => {
-            debug("MongoDB polling error: " + error.message);
+            debug("MongoDB polling error: " + error.message, error.stack);
         });
 
         this.mongoPoller.on("topic-config-changed", (topics) => {

@@ -4,7 +4,7 @@ const zamzaConfig = {
         consumer: {
             noptions: {
                 "metadata.broker.list": "localhost:9092",
-                "group.id": "zamza-example-group",
+                "group.id": "zamza-example-group-1",
                 "event_cb": false,
                 // "compression.codec": "snappy",
                 "api.version.request": true,

@@ -1,7 +1,7 @@
 import * as express from "express";
 import Zamza from "../../Zamza";
 
-const routeTopicConfigCrud = (zamza: Zamza) => {
+const routeTopicConfig = (zamza: Zamza) => {
 
     const router = express.Router();
     const topicConfigModel = zamza.mongoWrapper.getTopicConfig();
@@ -13,7 +13,7 @@ const routeTopicConfigCrud = (zamza: Zamza) => {
 
     router.post("/", async (req, res) => {
 
-        if (!res.locals.access.wildcardAccessAllowedForToken(req)) {
+        if (!res.locals.access.wildcardAccessAllowedForRequest(req)) {
             res.status(403).json({
                 error: "Access not allowed",
             });
@@ -21,12 +21,12 @@ const routeTopicConfigCrud = (zamza: Zamza) => {
         }
 
         const { topic, cleanupPolicy, segmentMs } = req.body;
-        res.status(201).json(await topicConfigModel.upsert(topic, cleanupPolicy, segmentMs));
+        res.status(202).json(await topicConfigModel.upsert(topic, cleanupPolicy, segmentMs));
     });
 
     router.put("/", async (req, res) => {
 
-        if (!res.locals.access.wildcardAccessAllowedForToken(req)) {
+        if (!res.locals.access.wildcardAccessAllowedForRequest(req)) {
             res.status(403).json({
                 error: "Access not allowed",
             });
@@ -34,12 +34,12 @@ const routeTopicConfigCrud = (zamza: Zamza) => {
         }
 
         const { topic, cleanupPolicy, segmentMs } = req.body;
-        res.status(200).json(await topicConfigModel.upsert(topic, cleanupPolicy, segmentMs));
+        res.status(202).json(await topicConfigModel.upsert(topic, cleanupPolicy, segmentMs));
     });
 
     router.delete("/:topic", async (req, res) => {
 
-        if (!res.locals.access.wildcardAccessAllowedForToken(req)) {
+        if (!res.locals.access.wildcardAccessAllowedForRequest(req)) {
             res.status(403).json({
                 error: "Access not allowed",
             });
@@ -59,4 +59,4 @@ const routeTopicConfigCrud = (zamza: Zamza) => {
     return router;
 };
 
-export { routeTopicConfigCrud };
+export { routeTopicConfig };

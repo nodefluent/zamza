@@ -93,7 +93,6 @@ export default class Discovery extends EventEmitter {
         const newTopicsHash = Discovery.arrayToFixedHash(topics);
 
         if (this.lastTopicsHash === newTopicsHash) {
-            debug("Topic hashes are identical, no new topics discovered.");
             return false;
         }
 

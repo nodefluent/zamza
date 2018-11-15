@@ -6,13 +6,34 @@ const routeRoot = (zamza: Zamza) => {
     const router = express.Router();
 
     router.get("/", (req, res) => {
-        res.status(200).json({
+        res.json({
             Hi: "I am (Gregor) Z(S)amz(s)a.",
+            parent: "/",
+            self: "/",
+            children: [
+                "/api",
+                "/doc",
+                "/healthcheck",
+                "/ready",
+                "/metrics",
+            ],
+        });
+    });
+
+    router.get("/api", (req, res) => {
+        res.json({
+            parent: "/",
+            self: "/api",
+            children: [
+                "/api/info",
+                "/api/fetch",
+                "/api/topic-config",
+            ],
         });
     });
 
     router.get("/doc", (req, res) => {
-        res.status(200).end("Coming soon..");
+        res.end("Coming soon..");
     });
 
     router.get("/healthcheck", (req, res) => {
@@ -24,7 +45,6 @@ const routeRoot = (zamza: Zamza) => {
     });
 
     router.get("/metrics", (req, res) => {
-        res.status(200);
         res.set("content-type", zamza.metrics.exportType());
         res.end(zamza.metrics.exportMetrics());
     });

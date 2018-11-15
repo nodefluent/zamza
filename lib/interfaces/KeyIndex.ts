@@ -8,4 +8,6 @@ export interface KeyIndex {
     value: Buffer | null;
     timestampValue: Buffer | null;
     deleteAt: number | null;
+    fromStream: boolean;
+    storedAt: number;
 }

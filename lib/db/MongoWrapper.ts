@@ -35,7 +35,9 @@ export default class MongoWrapper {
         return new Promise((resolve) => {
 
             mongoose.set("bufferCommands", false);
+            mongoose.set("useCreateIndex", true);
             (mongoose as any).Promise = Promise;
+
             mongoose.connect(this.config.url, Object.assign({}, this.config.options, {
                 useNewUrlParser: true,
             }));

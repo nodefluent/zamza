@@ -1,5 +1,6 @@
 import * as Debug from "debug";
 import { TopicConfig } from "../../interfaces/TopicConfig";
+import { exec } from "child_process";
 const debug = Debug("zamza:model:topicconfig");
 
 const ALLOWED_POLICIES = ["compact", "delete", "none"];
@@ -24,7 +25,20 @@ export class TopicConfigModel {
         };
 
         const schema = new schemaConstructor(schemaDefinition);
+
+        schema.index({ topic: 1, type: -1});
+
         this.model = mongoose.model(this.name, schema);
+
+        this.model.on("index", (error: Error) => {
+
+            if (error) {
+                debug("Index creation failed", error.message);
+            } else {
+                debug("Index creation successfull.");
+            }
+        });
+
         debug("Registered model with schema.");
     }
 
@@ -34,7 +48,19 @@ export class TopicConfigModel {
     }
 
     public list(): Promise<TopicConfig[]> {
-        return this.model.find({}).then((topics: TopicConfig[]) => topics.map((topic: any) => topic.get()));
+        return this.model.find({}).lean().exec().then((topicConfigs: any[]) => {
+            return topicConfigs.map((topicConfig: any) => {
+
+                const responseTopicConfig: TopicConfig = {
+                    topic: topicConfig.topic,
+                    cleanupPolicy: topicConfig.cleanupPolicy,
+                    segmentMs: topicConfig.segmentMs,
+                    timestamp: topicConfig.timestamp,
+                };
+
+                return responseTopicConfig;
+            });
+        });
     }
 
     public upsert(topic: string, cleanupPolicy: string, segmentMs: number,
@@ -72,15 +98,15 @@ export class TopicConfigModel {
             upsert: true,
         };
 
-        return this.model.findOneAndUpdate(query, document, queryOptions);
+        return this.model.findOneAndUpdate(query, document, queryOptions).exec();
     }
 
     public delete(topic: string) {
-        return this.model.remove({topic});
+        return this.model.deleteMany({topic}).exec();
     }
 
     public truncateCollection() {
         debug("Truncating collection");
-        return this.model.remove({});
+        return this.model.deleteMany({}).exec();
     }
 }

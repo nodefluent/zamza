@@ -54,7 +54,7 @@ export default class AccessControll {
         return this.topicAccessAllowedForToken(providedToken, topic);
     }
 
-    public wildcardAccessAllowedForRequest(req: any, topic: string) {
+    public wildcardAccessAllowedForRequest(req: any) {
         const providedToken: string = req.headers ? req.headers.authorization : null;
         return this.wildcardAccessAllowedForToken(providedToken);
     }
