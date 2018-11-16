@@ -5,6 +5,7 @@
 * handle message now respects tombstones on compact topics
 * /api/manage endpoints to create and delete keyindexes
 * produce endpoint now respects topic access tokens
+* advanced env variable overwrites for config (deploy secrets)
 
 ## 2018-11-15, Version 0.5.0
 

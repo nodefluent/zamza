@@ -133,11 +133,17 @@ Object.keys(process.env)
             options.http.access = {};
         }
 
+        const iterValues = iter.val && iter.val.indexOf && iter.val.indexOf(",") !== -1 
+            ? iter.val.split(",")
+            : [iter.val];
+
         if(!options.http.access[key]){
-            options.http.access[key] = [iter.val];
+            options.http.access[key] = iterValues;
             debug("Created access key for prefix", key);
         } else {
-            options.http.access[key].push(iter.val);
+            iterValues.forEach((value) => {
+                options.http.access[key].push(value);
+            });
             debug("Added token to access key for prefix", key);
         }
 
@@ -146,13 +152,156 @@ Object.keys(process.env)
 
     switch(iter.key){
 
-        case "DATABASE_URL":
+        case "MONGODB_URL":
 
             if(!options.mongo){
                 options.mongo = {};
             }
 
             options.mongo.url = iter.val;
+        break;
+
+        case "MONGODB_USERNAME":
+
+            if(!options.mongo){
+                options.mongo = {};
+            }
+
+            if(!options.mongo.options){
+                options.mongo.options = {}
+            }
+
+            options.mongo.options.user = iter.val;
+        break;
+
+        case "MONGODB_PASSWORD":
+
+            if(!options.mongo){
+                options.mongo = {};
+            }
+
+            if(!options.mongo.options){
+                options.mongo.options = {}
+            }
+
+            options.mongo.options.pass = iter.val;
+        break;
+
+        case "MONGODB_DBNAME":
+
+            if(!options.mongo){
+                options.mongo = {};
+            }
+
+            if(!options.mongo.options){
+                options.mongo.options = {}
+            }
+
+            options.mongo.options.dbName = iter.val;
+        break;
+
+        case "KAFKA_BROKER_LIST":
+            
+            if(!options.kafka){
+                options.kafka = {};
+            }
+
+            if(!options.kafka.consumer){
+                options.kafka.consumer = {};
+            }
+
+            if(!options.kafka.producer){
+                options.kafka.producer = {};
+            }
+
+            if(!options.kafka.consumer.noptions){
+                options.kafka.consumer.noptions = {};
+            }
+
+            if(!options.kafka.producer.noptions){
+                options.kafka.producer.noptions = {};
+            }
+
+            options.kafka.consumer.noptions["metadata.broker.list"] = iter.val;
+            options.kafka.producer.noptions["metadata.broker.list"] = iter.val;
+        break;
+
+        case "KAFKA_SSL_PASSPHRASE":
+
+            if(!options.kafka){
+                options.kafka = {};
+            }
+
+            if(!options.kafka.consumer){
+                options.kafka.consumer = {};
+            }
+
+            if(!options.kafka.producer){
+                options.kafka.producer = {};
+            }
+
+            if(!options.kafka.consumer.noptions){
+                options.kafka.consumer.noptions = {};
+            }
+
+            if(!options.kafka.producer.noptions){
+                options.kafka.producer.noptions = {};
+            }
+
+            options.kafka.consumer.noptions["ssl.key.password"] = iter.val;
+            options.kafka.producer.noptions["ssl.key.password"] = iter.val;
+        break;
+
+        case "KAFKA_SASL_USERNAME":
+
+            if(!options.kafka){
+                options.kafka = {};
+            }
+
+            if(!options.kafka.consumer){
+                options.kafka.consumer = {};
+            }
+
+            if(!options.kafka.producer){
+                options.kafka.producer = {};
+            }
+
+            if(!options.kafka.consumer.noptions){
+                options.kafka.consumer.noptions = {};
+            }
+
+            if(!options.kafka.producer.noptions){
+                options.kafka.producer.noptions = {};
+            }
+
+            options.kafka.consumer.noptions["sasl.username"] = iter.val;
+            options.kafka.producer.noptions["sasl.username"] = iter.val;
+        break;
+
+        case "KAFKA_SASL_PASSWORD":
+
+            if(!options.kafka){
+                options.kafka = {};
+            }
+
+            if(!options.kafka.consumer){
+                options.kafka.consumer = {};
+            }
+
+            if(!options.kafka.producer){
+                options.kafka.producer = {};
+            }
+
+            if(!options.kafka.consumer.noptions){
+                options.kafka.consumer.noptions = {};
+            }
+
+            if(!options.kafka.producer.noptions){
+                options.kafka.producer.noptions = {};
+            }
+
+            options.kafka.consumer.noptions["sasl.password"] = iter.val;
+            options.kafka.producer.noptions["sasl.password"] = iter.val;
         break;
 
         default:

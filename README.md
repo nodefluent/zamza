@@ -29,6 +29,7 @@ Apache Kafka discovery, indexing, searches, storage, hooks and HTTP gateway.
 You can manage topics to be indexed on the fly via `/api/topic-config` and 
 zamza will keep track of anything that goes through your Apache Kafka cluster.
 It will index and store messages in MongoDB, according to the topic's `delete` or `compact` configuration. You can find and retrieve messages in milliseconds via `/api/fetch`. Zamza also allows you to register HTTP hooks to subscribe to topics, as well as HTTP calls to produce to Kafka topics.
+Hooks also allow performant retries as well as replays of whole Kafka topics for specific (hook-) subscribers.
 
 ## Why
 
@@ -67,6 +68,23 @@ Checkout the APIDOC at `http://localhost:1912/doc`.
 ## Metrics
 
 You can monitor zamza via Prometheus at `http://localhost:1912/metrics`.
+
+## Config via Environment Variables
+
+It is possible to set a few config parameters (most in role of secrets) via environment variables.
+They will always overwrite the passed configuration file.
+
+* `ZAMZA_MONGODB_URL="mongodb://localhost:27017"` -> turns into: `config.mongo.url = "mongodb://localhost:27017";`
+* `ZAMZA_MONGODB_USERNAME=admin` -> turns into: `config.mongo.options.user = "admin";`
+* `ZAMZA_MONGODB_PASSWORD=admin` -> turns into: `config.mongo.options.pass = "admin";`
+* `ZAMZA_MONGODB_DBNAME=zamza_prod` -> turns into: `config.mongo.options.dbName = "zamza_prod";`
+* `ZAMZA_KAFKA_BROKER_LIST=kafka-1:9093,kafka-2:9093` -> turns into: `config.kafka.consumer.noptions["metadata.broker.list"] = "kafka-1:9093";`
+* `ZAMZA_KAFKA_SSL_PASSPHRASE="123456"` -> turns into: `config.kafka.consumer.noptions["ssl.key.password"] = "123456";`
+* `ZAMZA_KAFKA_SASL_USERNAME="123456"` -> turns into: `config.kafka.consumer.noptions["sasl.username"] = "123456";`
+* `ZAMZA_KAFKA_SASL_PASSWORD="123456"` -> turns into: `config.kafka.consumer.noptions["sasl.password"] = "123456";`
+* `ZAMZA_ACK_MYTOKEN=topic1,topic2 zamza -l "./config.json"` -> turns into: `config.http.access.mytoken = [ "topic1", "topic2" ];`
+
+The kafka env values will set consumer and producer at the same time.
 
 ## Roadmap
 
