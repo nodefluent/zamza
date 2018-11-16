@@ -40,6 +40,7 @@ export default class HttpServer {
             this.zamza.metrics.inc("http_calls");
             if (req.url && req.url.startsWith("/api")) {
                 this.zamza.metrics.inc("api_calls");
+                debug("api call =>", req.method, ":", req.url);
             }
 
             res.set("x-powered-by", `${pjson.name}/${pjson.version}`);

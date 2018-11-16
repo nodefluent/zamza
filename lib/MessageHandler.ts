@@ -106,7 +106,7 @@ export default class MessageHandler {
 
             case "delete":
                 this.metrics.inc("processed_messages_delete");
-                keyIndex.deleteAt = moment(keyIndex.timestamp).add(topicConfig.segmentMs, "milliseconds").valueOf();
+                keyIndex.deleteAt = moment(keyIndex.timestamp).add(topicConfig.retentionMs, "milliseconds").valueOf();
                 await this.keyIndexModel.insert(keyIndex);
                 break;
 

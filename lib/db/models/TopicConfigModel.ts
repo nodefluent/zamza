@@ -24,7 +24,7 @@ export class TopicConfigModel {
         const schemaDefinition = {
             topic: String,
             cleanupPolicy: String,
-            segmentMs: Number,
+            retentionMs: Number,
             timestamp: Number,
         };
 
@@ -58,7 +58,7 @@ export class TopicConfigModel {
                 const responseTopicConfig: TopicConfig = {
                     topic: topicConfig.topic,
                     cleanupPolicy: topicConfig.cleanupPolicy,
-                    segmentMs: topicConfig.segmentMs,
+                    retentionMs: topicConfig.retentionMs,
                     timestamp: topicConfig.timestamp,
                 };
 
@@ -67,7 +67,7 @@ export class TopicConfigModel {
         });
     }
 
-    public upsert(topic: string, cleanupPolicy: string, segmentMs: number,
+    public upsert(topic: string, cleanupPolicy: string, retentionMs: number,
                   timestamp: number = Date.now()): Promise<TopicConfig> {
 
         if (ALLOWED_POLICIES.indexOf(cleanupPolicy) === -1) {
@@ -75,22 +75,22 @@ export class TopicConfigModel {
                 + ALLOWED_POLICIES.join(", ") + ".");
         }
 
-        if (cleanupPolicy === "delete" && (!segmentMs || segmentMs <= 0)) {
-            throw new Error("cleanupPolicy 'delete' requires segmentMs to be set.");
+        if (cleanupPolicy === "delete" && (!retentionMs || retentionMs <= 0)) {
+            throw new Error("cleanupPolicy 'delete' requires retentionMs to be set.");
         }
 
-        if (cleanupPolicy === "compact" && (segmentMs || segmentMs > 0)) {
-            throw new Error("cleanupPolicy 'compact' requires segmentMs to be 0 or null.");
+        if (cleanupPolicy === "compact" && (retentionMs || retentionMs > 0)) {
+            throw new Error("cleanupPolicy 'compact' requires retentionMs to be 0 or null.");
         }
 
-        if (cleanupPolicy === "none" && (segmentMs || segmentMs > 0)) {
-            throw new Error("cleanupPolicy 'none' requires segmentMs to be 0 or null.");
+        if (cleanupPolicy === "none" && (retentionMs || retentionMs > 0)) {
+            throw new Error("cleanupPolicy 'none' requires retentionMs to be 0 or null.");
         }
 
         const document = {
             topic,
             cleanupPolicy,
-            segmentMs,
+            retentionMs,
             timestamp,
         };
 

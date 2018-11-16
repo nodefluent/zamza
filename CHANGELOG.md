@@ -1,5 +1,11 @@
 # zamza CHANGELOG
 
+## 2018-11-16, Version 0.9.0
+
+* migrated according to kafka docus from "segementMs" to "retentionMs" for topic-configurations
+* not logging tokens on bad access anymore
+* simple access log
+
 ## 2018-11-16, Version 0.8.0
 
 * acl env variable overwrite, can now be done without exposing secrets in the key

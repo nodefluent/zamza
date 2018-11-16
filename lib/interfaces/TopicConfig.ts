@@ -1,6 +1,6 @@
 export interface TopicConfig {
     topic: string;
     cleanupPolicy: string;
-    segmentMs: number;
+    retentionMs: number;
     timestamp: number;
 }

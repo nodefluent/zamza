@@ -67,14 +67,14 @@ export default class AccessControll {
         }
 
         if (!token) {
-            debug("Topic access not allowed for token", token, "and topic", topic, "reason: no token.");
+            debug("Topic access not allowed for token", "token", "and topic", topic, "reason: no token.");
             this.metrics.inc("access_bad");
             return false;
         }
 
         const configuration = this.accessConfig[token];
         if (!configuration) {
-            debug("Topic access not allowed for token", token, "and topic", topic, "reason: no configuration.");
+            debug("Topic access not allowed for token", "token", "and topic", topic, "reason: no configuration.");
             this.metrics.inc("access_bad");
             return false;
         }
@@ -89,7 +89,7 @@ export default class AccessControll {
             return true;
         }
 
-        debug("Topic access not allowed for token", token, "and topic", topic, "reason: topic not allowed.");
+        debug("Topic access not allowed for token", "token", "and topic", topic, "reason: topic not allowed.");
         this.metrics.inc("access_bad");
         return false;
     }
@@ -102,14 +102,14 @@ export default class AccessControll {
         }
 
         if (!token) {
-            debug("Topic access not allowed for token", token, "reason: no token.");
+            debug("Topic access not allowed for token", "token", "reason: no token.");
             this.metrics.inc("access_bad");
             return false;
         }
 
         const configuration = this.accessConfig[token];
         if (!configuration) {
-            debug("Topic access not allowed for token", token, "reason: no configuration.");
+            debug("Topic access not allowed for token", "token", "reason: no configuration.");
             this.metrics.inc("access_bad");
             return false;
         }
@@ -119,7 +119,7 @@ export default class AccessControll {
             return true;
         }
 
-        debug("Topic access not allowed for token", token, "reason: no wildcard.");
+        debug("Topic access not allowed for token", "token", "reason: no wildcard.");
         this.metrics.inc("access_bad");
         return false;
     }

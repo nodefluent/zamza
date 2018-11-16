@@ -20,8 +20,8 @@ const routeTopicConfig = (zamza: Zamza) => {
             return;
         }
 
-        const { topic, cleanupPolicy, segmentMs } = req.body;
-        res.status(202).json(await topicConfigModel.upsert(topic, cleanupPolicy, segmentMs));
+        const { topic, cleanupPolicy, retentionMs } = req.body;
+        res.status(202).json(await topicConfigModel.upsert(topic, cleanupPolicy, retentionMs));
     });
 
     router.put("/", async (req, res) => {
@@ -33,8 +33,8 @@ const routeTopicConfig = (zamza: Zamza) => {
             return;
         }
 
-        const { topic, cleanupPolicy, segmentMs } = req.body;
-        res.status(202).json(await topicConfigModel.upsert(topic, cleanupPolicy, segmentMs));
+        const { topic, cleanupPolicy, retentionMs } = req.body;
+        res.status(202).json(await topicConfigModel.upsert(topic, cleanupPolicy, retentionMs));
     });
 
     router.delete("/:topic", async (req, res) => {
