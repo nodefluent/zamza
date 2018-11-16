@@ -117,38 +117,39 @@ options = Object.assign(defaultOptions, options);
 
 //overwrite secrets via env variables (easier for kubernetes setups)
 
-const ACK_PREFIX = "ACK_";
 Object.keys(process.env)
 .map(key => { return {key: key, val: process.env[key]}; })
 .forEach(iter => {
 
-    // turn ACK_MYPREFIX=123 into http: { access: { myprefix: ["123"] } }
-    if(iter.key.startsWith(ACK_PREFIX)){
-
-        const key = iter.key.split(ACK_PREFIX)[1].toLowerCase();
-
-        if(!options.http.access || typeof options.http.access !== "object"){
-            options.http.access = {};
-        }
-
-        const iterValues = iter.val && iter.val.indexOf && iter.val.indexOf(",") !== -1 
-            ? iter.val.split(",")
-            : [iter.val];
-
-        if(!options.http.access[key]){
-            options.http.access[key] = iterValues;
-            debug("Created access key for prefix", iterValues);
-        } else {
-            iterValues.forEach((value) => {
-                options.http.access[key].push(value);
-            });
-            debug("Added token to access key for prefix", iterValues);
-        }
-
-        return;
-    }
-
     switch(iter.key){
+
+        case "ACL_DEFINITIONS":
+
+            // ACL_DEFINITIONS="token1=topic1,topic2;token2=topic3"
+
+            if(!options.http){
+                options.http = {};
+            }
+
+            if(!options.http.access || typeof options.http.access !== "object"){
+                options.http.access = {};
+            }
+
+            const multiValues = iter.val.split(";").filter((str) => !!str);
+            multiValues.forEach((multiValue) => {
+                const token = multiValue.split("=")[0];
+                const values = multiValue.split("=")[1];
+                const topics = values.split(",");
+
+                if(!options.http.access[token]){
+                    options.http.access[token] = topics;
+                } else {
+                    topics.forEach((topic) => {
+                        options.http.access[token].push(topic);
+                    });
+                }
+            });
+        break;
 
         case "MONGODB_URL":
 
@@ -303,7 +304,6 @@ Object.keys(process.env)
         break;
 
         default:
-            debug("Unknown env key", PREFIX + iter.key);
         return;
     }
 

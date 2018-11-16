@@ -1,5 +1,9 @@
 # zamza CHANGELOG
 
+## 2018-11-16, Version 0.8.0
+
+* acl env variable overwrite, can now be done without exposing secrets in the key
+
 ## 2018-11-16, Version 0.7.0
 
 * handling tombstone messages as deletes on messageHandler

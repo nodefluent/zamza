@@ -82,7 +82,7 @@ They will always overwrite the passed configuration file.
 * `KAFKA_SSL_PASSPHRASE="123456"` -> turns into: `config.kafka.consumer.noptions["ssl.key.password"] = "123456";`
 * `KAFKA_SASL_USERNAME="123456"` -> turns into: `config.kafka.consumer.noptions["sasl.username"] = "123456";`
 * `KAFKA_SASL_PASSWORD="123456"` -> turns into: `config.kafka.consumer.noptions["sasl.password"] = "123456";`
-* `ACK_MYTOKEN=topic1,topic2 zamza -l "./config.json"` -> turns into: `config.http.access.mytoken = [ "topic1", "topic2" ];`
+* `ACL_DEFINITIONS="mytoken=topic1,topic2;othertoken=topic3" zamza -l "./config.json"` -> turns into: `config.http.access.mytoken = [ "topic1", "topic2" ];`
 
 The kafka env values will set consumer and producer at the same time.
 
