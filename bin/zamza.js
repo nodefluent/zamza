@@ -117,14 +117,12 @@ options = Object.assign(defaultOptions, options);
 
 //overwrite secrets via env variables (easier for kubernetes setups)
 
-const PREFIX = "ZAMZA_";
 const ACK_PREFIX = "ACK_";
 Object.keys(process.env)
-.filter(key => key.startsWith(PREFIX))
-.map(key => { return {key: key.split(PREFIX)[1], val: process.env[key]}; })
+.map(key => { return {key: key, val: process.env[key]}; })
 .forEach(iter => {
 
-    // turn ZAMZA_ACK_MYPREFIX=123 into http: { access: { myprefix: ["123"] } }
+    // turn ACK_MYPREFIX=123 into http: { access: { myprefix: ["123"] } }
     if(iter.key.startsWith(ACK_PREFIX)){
 
         const key = iter.key.split(ACK_PREFIX)[1].toLowerCase();
@@ -139,12 +137,12 @@ Object.keys(process.env)
 
         if(!options.http.access[key]){
             options.http.access[key] = iterValues;
-            debug("Created access key for prefix", key);
+            debug("Created access key for prefix", iterValues);
         } else {
             iterValues.forEach((value) => {
                 options.http.access[key].push(value);
             });
-            debug("Added token to access key for prefix", key);
+            debug("Added token to access key for prefix", iterValues);
         }
 
         return;

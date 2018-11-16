@@ -74,15 +74,15 @@ You can monitor zamza via Prometheus at `http://localhost:1912/metrics`.
 It is possible to set a few config parameters (most in role of secrets) via environment variables.
 They will always overwrite the passed configuration file.
 
-* `ZAMZA_MONGODB_URL="mongodb://localhost:27017"` -> turns into: `config.mongo.url = "mongodb://localhost:27017";`
-* `ZAMZA_MONGODB_USERNAME=admin` -> turns into: `config.mongo.options.user = "admin";`
-* `ZAMZA_MONGODB_PASSWORD=admin` -> turns into: `config.mongo.options.pass = "admin";`
-* `ZAMZA_MONGODB_DBNAME=zamza_prod` -> turns into: `config.mongo.options.dbName = "zamza_prod";`
-* `ZAMZA_KAFKA_BROKER_LIST=kafka-1:9093,kafka-2:9093` -> turns into: `config.kafka.consumer.noptions["metadata.broker.list"] = "kafka-1:9093";`
-* `ZAMZA_KAFKA_SSL_PASSPHRASE="123456"` -> turns into: `config.kafka.consumer.noptions["ssl.key.password"] = "123456";`
-* `ZAMZA_KAFKA_SASL_USERNAME="123456"` -> turns into: `config.kafka.consumer.noptions["sasl.username"] = "123456";`
-* `ZAMZA_KAFKA_SASL_PASSWORD="123456"` -> turns into: `config.kafka.consumer.noptions["sasl.password"] = "123456";`
-* `ZAMZA_ACK_MYTOKEN=topic1,topic2 zamza -l "./config.json"` -> turns into: `config.http.access.mytoken = [ "topic1", "topic2" ];`
+* `MONGODB_URL="mongodb://localhost:27017"` -> turns into: `config.mongo.url = "mongodb://localhost:27017";`
+* `MONGODB_USERNAME=admin` -> turns into: `config.mongo.options.user = "admin";`
+* `MONGODB_PASSWORD=admin` -> turns into: `config.mongo.options.pass = "admin";`
+* `MONGODB_DBNAME=zamza_prod` -> turns into: `config.mongo.options.dbName = "zamza_prod";`
+* `KAFKA_BROKER_LIST=kafka-1:9093,kafka-2:9093` -> turns into: `config.kafka.consumer.noptions["metadata.broker.list"] = "kafka-1:9093";`
+* `KAFKA_SSL_PASSPHRASE="123456"` -> turns into: `config.kafka.consumer.noptions["ssl.key.password"] = "123456";`
+* `KAFKA_SASL_USERNAME="123456"` -> turns into: `config.kafka.consumer.noptions["sasl.username"] = "123456";`
+* `KAFKA_SASL_PASSWORD="123456"` -> turns into: `config.kafka.consumer.noptions["sasl.password"] = "123456";`
+* `ACK_MYTOKEN=topic1,topic2 zamza -l "./config.json"` -> turns into: `config.http.access.mytoken = [ "topic1", "topic2" ];`
 
 The kafka env values will set consumer and producer at the same time.
 

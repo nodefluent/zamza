@@ -93,11 +93,15 @@ export default class MessageHandler {
         switch (topicConfig.cleanupPolicy) {
 
             case "compact":
-                this.metrics.inc("processed_messages_compact");
-                await this.keyIndexModel.upsert(keyIndex);
 
-                // TODO: tombstone message should deleteOne keyIndex
-
+                if (keyIndex.value !== null) {
+                    this.metrics.inc("processed_messages_compact");
+                    await this.keyIndexModel.upsert(keyIndex);
+                } else {
+                    // a kafka message with a NULL value on a compacted topic is a tombstone
+                    this.metrics.inc("processed_messages_tombstone");
+                    await this.keyIndexModel.delete(message.topic, (message as any).key, fromStream);
+                }
                 break;
 
             case "delete":

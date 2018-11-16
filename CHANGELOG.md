@@ -1,5 +1,10 @@
 # zamza CHANGELOG
 
+## 2018-11-16, Version 0.7.0
+
+* handling tombstone messages as deletes on messageHandler
+* removed env variable prefix
+
 ## 2018-11-16, Version 0.6.0
 
 * handle message now respects tombstones on compact topics

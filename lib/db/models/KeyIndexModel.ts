@@ -238,6 +238,17 @@ export class KeyIndexModel {
     }
 
     public delete(topic: string, key: string, fromStream: boolean = false) {
+
+        if (!topic) {
+            debug("Cannot delete message without topic", topic, key, fromStream);
+            return Promise.reject(new Error("Cannot delete message without topic"));
+        }
+
+        if (!key) {
+            debug("Cannot delete message without key", topic, key, fromStream);
+            return Promise.reject(new Error("Cannot delete message without key"));
+        }
+
         return this.model.deleteMany({
             topic: this.hash(topic),
             key: this.hash(key),
