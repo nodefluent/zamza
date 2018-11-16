@@ -92,6 +92,10 @@ export default class Discovery extends EventEmitter {
 
         const newTopicsHash = Discovery.arrayToFixedHash(topics);
 
+        if (!this.lastTopicsHash && !newTopicsHash) {
+            return false;
+        }
+
         if (this.lastTopicsHash === newTopicsHash) {
             return false;
         }

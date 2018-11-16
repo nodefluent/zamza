@@ -19,24 +19,52 @@ if(program.json){
     
     debugBase = require("debug"); //overwrite
     const oldDebug = debugBase.log;
-    debugBase.log = (arg1, arg2, arg3) => {
+    debugBase.log = (arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10) => {
         try {
             if(arg1 && typeof arg1 !== "string"){
                 arg1 = JSON.stringify(arg1);
             }
         
-            if(arg1 && typeof arg2 !== "string"){
+            if(arg2 && typeof arg2 !== "string"){
                 arg2 = JSON.stringify(arg2);
             }
         
-            if(arg1 && typeof arg3 !== "string"){
+            if(arg3 && typeof arg3 !== "string"){
                 arg3 = JSON.stringify(arg3);
             }
+
+            if(arg4 && typeof arg4 !== "string"){
+                arg4 = JSON.stringify(arg4);
+            }
+
+            if(arg5 && typeof arg5 !== "string"){
+                arg5 = JSON.stringify(arg5);
+            }
+
+            if(arg6 && typeof arg6 !== "string"){
+                arg6 = JSON.stringify(arg6);
+            }
+
+            if(arg7 && typeof arg7 !== "string"){
+                arg7 = JSON.stringify(arg7);
+            }
+
+            if(arg8 && typeof arg8 !== "string"){
+                arg8 = JSON.stringify(arg8);
+            }
+
+            if(arg9 && typeof arg9 !== "string"){
+                arg9 = JSON.stringify(arg9);
+            }
+
+            if(arg10 && typeof arg10 !== "string"){
+                arg10 = JSON.stringify(arg10);
+            }
     
-            const msgs = [arg1, arg2, arg3];
+            const msgs = [arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10];
             
             oldDebug(JSON.stringify({
-                msg: msgs.filter(m => !!m).join(" ")
+                msg: msgs.filter(m => typeof m !== "undefined").join(" ")
             }));
         } catch(error){
             oldDebug("Dropped log message because of error " + error.message);

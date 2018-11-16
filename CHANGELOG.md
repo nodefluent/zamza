@@ -1,5 +1,9 @@
 # zamza CHANGELOG
 
+## 2018-11-16, Version 0.10.0
+
+* small fixes
+
 ## 2018-11-16, Version 0.9.0
 
 * migrated according to kafka docus from "segementMs" to "retentionMs" for topic-configurations
