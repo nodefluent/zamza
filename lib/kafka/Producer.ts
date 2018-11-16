@@ -50,6 +50,16 @@ export default class Producer {
         return this.producer.send(topic, value, (partition as any), (key as any));
     }
 
+    public produceTombstone(topic: string, key: string, partition?: any): Promise<any> {
+
+        if (!this.producer) {
+            return Promise.resolve(null);
+        }
+
+        this.producedLately++;
+        return this.producer.tombstone(topic, key, partition);
+    }
+
     public getKafkaStats() {
         return this.producer ? this.producer.getStats() : {};
     }

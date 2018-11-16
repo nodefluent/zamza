@@ -44,6 +44,7 @@ export class KeyIndexModel {
         schema.index({ deleteAt: 1, type: -1});
         schema.index({ partition: 1, type: -1});
         schema.index({ offset: 1, type: -1});
+        schema.index({ fromStream: 1, type: -1});
 
         this.model = mongoose.model(this.name, schema);
 
@@ -234,6 +235,14 @@ export class KeyIndexModel {
         this.metrics.set("mongo_keyindex_upsert_ms", duration);
 
         return result;
+    }
+
+    public delete(topic: string, key: string, fromStream: boolean = false) {
+        return this.model.deleteMany({
+            topic: this.hash(topic),
+            key: this.hash(key),
+            fromStream,
+        });
     }
 
     public removeOldDeletePolicyEntries() {

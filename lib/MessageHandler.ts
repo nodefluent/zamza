@@ -27,7 +27,7 @@ export default class MessageHandler {
         return murmur.v3(value, 0);
     }
 
-    private findConfigForTopic(topic: string): TopicConfig | null {
+    public findConfigForTopic(topic: string): TopicConfig | null {
 
         const topicConfigs = this.mongoPoller.getCollected().topicConfigs;
         for (let i = topicConfigs.length - 1; i >= 0; i--) {
@@ -43,7 +43,7 @@ export default class MessageHandler {
         return topic.replace(/-/g, "_");
     }
 
-    public async handleMessage(message: KafkaMessage): Promise<boolean> {
+    public async handleMessage(message: KafkaMessage, fromStream: boolean = true): Promise<boolean> {
 
         this.metrics.inc("processed_messages");
 
@@ -78,7 +78,7 @@ export default class MessageHandler {
             value: Buffer.isBuffer(message.value) ? message.value : (message.value ? Buffer.from(message.value) : null),
             timestampValue: messageHasTimestamp ? Buffer.from((message as any).timestamp + "") : null,
             deleteAt: null,
-            fromStream: true,
+            fromStream,
             storedAt: timeOfStoring,
         };
 
@@ -95,6 +95,9 @@ export default class MessageHandler {
             case "compact":
                 this.metrics.inc("processed_messages_compact");
                 await this.keyIndexModel.upsert(keyIndex);
+
+                // TODO: tombstone message should deleteOne keyIndex
+
                 break;
 
             case "delete":
