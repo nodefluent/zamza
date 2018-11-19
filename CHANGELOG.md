@@ -1,5 +1,11 @@
 # zamza CHANGELOG
 
+## 2018-11-19, Version 0.14.0
+
+* fixed bug in metrics, gauge prefixing
+* changed topic fetch info from distinct to custom aggregate count query
+* added compound indices for key index model
+
 ## 2018-11-19, Version 0.13.0
 
 * advanced handling of MongoDB reconnection

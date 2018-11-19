@@ -52,7 +52,7 @@ export class Metrics {
     private getGauge(key: string): promClient.Gauge {
 
         // prefix
-        key = `gauge_${key}`;
+        key = `${key}_gauge`;
 
         if (this.metrics[key]) {
             return this.metrics[key] as promClient.Gauge;

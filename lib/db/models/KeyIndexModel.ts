@@ -37,14 +37,22 @@ export class KeyIndexModel {
 
         const schema = new schemaConstructor(schemaDefinition);
 
+        // single lookup indices
         schema.index({ key: 1, type: -1});
         schema.index({ topic: 1, type: -1});
         schema.index({ timestamp: 1, type: -1});
         schema.index({ timestamp: 1, type: 1});
         schema.index({ deleteAt: 1, type: -1});
-        schema.index({ partition: 1, type: -1});
-        schema.index({ offset: 1, type: -1});
-        schema.index({ fromStream: 1, type: -1});
+        // schema.index({ partition: 1, type: -1});
+        // schema.index({ offset: 1, type: -1});
+        // schema.index({ fromStream: 1, type: -1});
+
+        // compound index
+        schema.index({topic: 1, partition: 1}, {unique: false});
+        schema.index({topic: 1, key: 1}, {unique: false});
+        schema.index({topic: 1, key: 1, fromStream: 1}, {unique: false});
+        schema.index({topic: 1, partition: 1, offset: 1}, {unique: false});
+        schema.index({topic: 1, timestamp: 1}, {unique: false});
 
         this.model = mongoose.model(this.name, schema);
 
@@ -94,9 +102,20 @@ export class KeyIndexModel {
 
         const startTime = Date.now();
 
-        const partitions = await this.model.distinct("partition", {
-            topic: this.hash(topic),
-        });
+        const partitions = await this.model.aggregate([
+            { // Filter for specific topic
+                $match: {
+                    topic: this.hash(topic),
+                },
+            }, // Count all occurrences
+            { $group: {
+                _id: {
+                    partition: "$partition",
+                },
+                count: { $sum: 1 },
+                },
+            },
+        ]);
 
         const earliestOffsets: any[] = [];
         const latestOffsets: any[] = [];
@@ -222,8 +241,8 @@ export class KeyIndexModel {
         const startTime = Date.now();
 
         const query = {
-            key: document.key,
             topic: document.topic,
+            key: document.key,
         };
 
         const queryOptions = {
