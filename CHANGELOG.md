@@ -1,5 +1,10 @@
 # zamza CHANGELOG
 
+## 2018-11-19, Version 0.15.0
+
+* adjusted key index model indices once again
+* pagination limit "limit"
+
 ## 2018-11-19, Version 0.14.0
 
 * fixed bug in metrics, gauge prefixing

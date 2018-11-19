@@ -38,21 +38,23 @@ export class KeyIndexModel {
         const schema = new schemaConstructor(schemaDefinition);
 
         // single lookup indices
-        schema.index({ key: 1, type: -1});
-        schema.index({ topic: 1, type: -1});
-        schema.index({ timestamp: 1, type: -1});
-        schema.index({ timestamp: 1, type: 1});
-        schema.index({ deleteAt: 1, type: -1});
-        // schema.index({ partition: 1, type: -1});
-        // schema.index({ offset: 1, type: -1});
-        // schema.index({ fromStream: 1, type: -1});
+        schema.index({ key: 1, type: -1 });
+        // schema.index({ topic: 1, type: -1 });
+        // schema.index({ timestamp: 1, type: -1 });
+        // schema.index({ timestamp: 1, type: 1 });
+        // schema.index({ deleteAt: 1, type: -1 });
+        // schema.index({ partition: 1, type: -1 });
+        // schema.index({ offset: 1, type: -1 });
+        // schema.index({ fromStream: 1, type: -1 });
 
         // compound index
-        schema.index({topic: 1, partition: 1}, {unique: false});
-        schema.index({topic: 1, key: 1}, {unique: false});
-        schema.index({topic: 1, key: 1, fromStream: 1}, {unique: false});
-        schema.index({topic: 1, partition: 1, offset: 1}, {unique: false});
-        schema.index({topic: 1, timestamp: 1}, {unique: false});
+        schema.index({ topic: 1, key: 1 }, { unique: false });
+        schema.index({ topic: 1, key: 1, fromStream: 1 }, { unique: false });
+        schema.index({ topic: 1, partition: 1 }, { unique: false });
+        schema.index({ topic: 1, partition: 1, offset: 1 }, { unique: false });
+
+        schema.index({ topic: 1, timestamp: 1 }, { unique: false });
+        schema.index({ topic: 1, timestamp: -1 }, { unique: false });
 
         this.model = mongoose.model(this.name, schema);
 
@@ -109,9 +111,7 @@ export class KeyIndexModel {
                 },
             }, // Count all occurrences
             { $group: {
-                _id: {
-                    partition: "$partition",
-                },
+                partition: "$partition",
                 count: { $sum: 1 },
                 },
             },
@@ -198,6 +198,10 @@ export class KeyIndexModel {
     }
 
     public async paginateThroughTopic(topic: string, skip: number = 0, limit: number = 50, order: number = -1) {
+
+        if (limit > 2500) {
+            throw new Error(limit + " is a huge limit size, please stay under 2500 per call.");
+        }
 
         debug("Paginating from", skip, "to", skip + limit, "on topic", topic, "order", order);
         const startTime = Date.now();
