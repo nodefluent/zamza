@@ -62,13 +62,18 @@ export default class MessageHandler {
         this.metrics.inc(`processed_messages_topic_${this.cleanTopicNameForMetrics(message.topic)}`);
 
         const startTime = Date.now();
+        let keyAsBuffer: Buffer | null = null;
+        let keyAsString: string | null = null;
 
-        const keyAsBuffer: Buffer | null = Buffer.isBuffer(message.key) ? message.key :
-            (message.key ? Buffer.from(message.key) : null);
-
-        const keyAsString: string =
-            typeof message.key === "string" ? message.key :
-                (Buffer.isBuffer(message.key) ? message.key.toString("utf8") : message.key + "");
+        if (message.key) {
+            if (Buffer.isBuffer(message.key)) {
+                keyAsBuffer = message.key;
+                keyAsString = message.key.toString("utf8");
+            } else {
+                keyAsBuffer = Buffer.from(message.key);
+                keyAsString = message.key + "";
+            }
+        }
 
         // if the message has a timestamp (epoch) present, we will use it for retention, otherwise
         // the time of db insertion will be used to determine ttl

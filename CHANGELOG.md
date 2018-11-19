@@ -1,5 +1,9 @@
 # zamza CHANGELOG
 
+## 2018-11-19, Version 0.17.0
+
+* fixing bug in message handle on bad message keys
+
 ## 2018-11-19, Version 0.16.0
 
 * beautify aggregated partitions for fetch topic info
