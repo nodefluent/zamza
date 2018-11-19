@@ -1,5 +1,9 @@
 # zamza CHANGELOG
 
+## 2018-11-19, Version 0.16.0
+
+* beautify aggregated partitions for fetch topic info
+
 ## 2018-11-19, Version 0.15.0
 
 * adjusted key index model indices once again

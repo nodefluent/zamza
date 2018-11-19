@@ -104,14 +104,16 @@ export class KeyIndexModel {
 
         const startTime = Date.now();
 
-        const partitions = await this.model.aggregate([
+        const partitionAggregation = await this.model.aggregate([
             { // Filter for specific topic
                 $match: {
                     topic: this.hash(topic),
                 },
             }, // Count all occurrences
             { $group: {
-                partition: "$partition",
+                _id: { // accumulator object
+                    partition: "$partition",
+                },
                 count: { $sum: 1 },
                 },
             },
@@ -128,7 +130,12 @@ export class KeyIndexModel {
 
         return {
             topic,
-            partitions,
+            partitions: partitionAggregation.map((aggregatedPartition: any) => {
+                return {
+                    partition: aggregatedPartition._id.partition,
+                    size: aggregatedPartition.count,
+                };
+            }),
             earliestOffsets,
             latestOffsets,
             earliestMessage,
