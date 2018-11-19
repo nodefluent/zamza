@@ -1,7 +1,7 @@
 import * as Debug from "debug";
 const debug = Debug("zamza:consumer");
 
-import { NConsumer } from "sinek";
+import { NConsumer, KafkaMessage } from "sinek";
 import Zamza from "../Zamza";
 import { KafkaConfig } from "../interfaces";
 
@@ -37,16 +37,25 @@ export default class Consumer {
         await this.consumer.connect();
         this.consumer.consume(async (message, callback) => {
             this.consumedLately++;
-            try {
-                await this.zamza.messageHandler.handleMessage(message);
-                callback(null);
-            } catch (error) {
-                debug("Failed to process kafka message.", error);
-                callback(error);
-            }
+            await this.processMessageWithRetry(message);
+            callback(null);
         }, false, false, this.config.batchOptions);
 
         debug("Connected.");
+    }
+
+    private async processMessageWithRetry(message: KafkaMessage, attempts = 0): Promise<boolean> {
+        try {
+            attempts++;
+            await this.zamza.messageHandler.handleMessage(message);
+            return true;
+        } catch (error) {
+            debug("Failed to process kafka message, attempt", attempts, "with error", error.message);
+            return (new Promise((resolve) => setTimeout(resolve, attempts * 1000)))
+                .then(() => {
+                    return this.processMessageWithRetry(message, attempts);
+                });
+        }
     }
 
     public adjustSubscriptions(topics: string[]) {

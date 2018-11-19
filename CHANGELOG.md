@@ -1,5 +1,10 @@
 # zamza CHANGELOG
 
+## 2018-11-19, Version 0.12.0
+
+* fixed bug in topic with wildcard access controll
+* now retrying kafka messages on errors endlessly with increasing cooldown on attempts
+
 ## 2018-11-19, Version 0.11.1
 
 * fixed bug in wildcard access controll

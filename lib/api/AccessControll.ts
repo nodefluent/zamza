@@ -117,6 +117,11 @@ export default class AccessControll {
             return true;
         }
 
+        if (Array.isArray(configuration) && configuration.indexOf(WILDCARD) !== -1) {
+            this.metrics.inc("access_good");
+            return true;
+        }
+
         debug("Topic access not allowed for token", "token", "and topic", topic, "reason: topic not allowed.");
         this.metrics.inc("access_bad");
         return false;
