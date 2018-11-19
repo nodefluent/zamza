@@ -10,17 +10,20 @@ import { KeyIndexModel } from "./db/models";
 import { Metrics } from "./Metrics";
 import { KeyIndex } from "./interfaces";
 import { TopicConfig } from "./interfaces/TopicConfig";
+import MongoWrapper from "./db/MongoWrapper";
 
 export default class MessageHandler {
 
     private readonly mongoPoller: MongoPoller;
     private readonly keyIndexModel: KeyIndexModel;
     private readonly metrics: Metrics;
+    private readonly mongoWrapper: MongoWrapper;
 
     constructor(zamza: Zamza) {
         this.mongoPoller = zamza.mongoPoller;
         this.keyIndexModel = zamza.mongoWrapper.getKeyIndexModel();
         this.metrics = zamza.metrics;
+        this.mongoWrapper = zamza.mongoWrapper;
     }
 
     private hash(value: string): number {
@@ -50,6 +53,10 @@ export default class MessageHandler {
         if (!message || !message.topic || typeof message.topic !== "string") {
             debug("Dropping message because of bad format, not an object or no topic", message);
             return false;
+        }
+
+        if (!this.mongoWrapper.isConnected()) {
+            throw new Error("MongoDB connection is not established.");
         }
 
         this.metrics.inc(`processed_messages_topic_${this.cleanTopicNameForMetrics(message.topic)}`);

@@ -1,5 +1,9 @@
 # zamza CHANGELOG
 
+## 2018-11-19, Version 0.13.0
+
+* advanced handling of MongoDB reconnection
+
 ## 2018-11-19, Version 0.12.0
 
 * fixed bug in topic with wildcard access controll
