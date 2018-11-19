@@ -25,38 +25,80 @@ const routeInfo = (zamza: Zamza) => {
     });
 
     router.get("/consumer", async (req, res) => {
-        res.status(200).json(await consumer.getKafkaStats());
+
+        try {
+            res.status(200).json(await consumer.getKafkaStats());
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
     });
 
     router.get("/producer", async (req, res) => {
-        res.status(200).json(await producer.getKafkaStats());
+
+        try {
+            res.status(200).json(await producer.getKafkaStats());
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
     });
 
     router.get("/topics", async (req, res) => {
-        res.status(200).json(await consumer.getTopicMetadata());
+
+        try {
+            res.status(200).json(await consumer.getTopicMetadata());
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
     });
 
     router.get("/topics/discovered", (req, res) => {
-        res.status(200).json(discovery.getDiscoveredTopics());
+
+        try {
+            res.status(200).json(discovery.getDiscoveredTopics());
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
     });
 
     router.get("/topics/configured", async (req, res) => {
-        res.status(200).json(await topicConfigModel.listAsTopics());
+
+        try {
+            res.status(200).json(await topicConfigModel.listAsTopics());
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
     });
 
     router.get("/topics/available", async (req, res) => {
 
-        const configuredTopics = await topicConfigModel.listAsTopics();
-        const discoveredTopics = discovery.getDiscoveredTopics();
-        const availableTopics: string[] = [];
+        try {
 
-        discoveredTopics.forEach((discoveredTopic) => {
-            if (configuredTopics.indexOf(discoveredTopic) === -1) {
-                availableTopics.push(discoveredTopic);
-            }
-        });
+            const configuredTopics = await topicConfigModel.listAsTopics();
+            const discoveredTopics = discovery.getDiscoveredTopics();
+            const availableTopics: string[] = [];
 
-        res.status(200).json(availableTopics);
+            discoveredTopics.forEach((discoveredTopic) => {
+                if (configuredTopics.indexOf(discoveredTopic) === -1) {
+                    availableTopics.push(discoveredTopic);
+                }
+            });
+
+            res.status(200).json(availableTopics);
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
     });
 
     return router;

@@ -1,5 +1,14 @@
 # zamza CHANGELOG
 
+## 2018-11-19, Version 0.11.0
+
+* added more endpoints for topic configuration (/many and /:topic)
+* POST now rejects if configuration already exists
+* correct error handling for all endpoints
+* now logging anonymised version of access configuration, for debug convenience
+* **BREAKING** moved /api/topic-config to /api/config/topics
+* focussing on `yarn` as package manager only
+
 ## 2018-11-16, Version 0.10.0
 
 * small fixes

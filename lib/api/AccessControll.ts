@@ -20,6 +20,7 @@ export default class AccessControll {
 
         if (this.accessConfig === WILDCARD) {
             debug("NOTE: You have NOT configured secured access to config and fetch endpoints.");
+            debug("Configured Access Controll: ", this.accessConfig);
         } else {
 
             debug("Validating access configuration..");
@@ -28,6 +29,15 @@ export default class AccessControll {
                 throw new Error("Bad access configuration provided (object): " + JSON.stringify(this.accessConfig));
             } else {
                 Object.keys(this.accessConfig).map((key) => {
+
+                    if (!key || key === WILDCARD) {
+                        throw new Error("Multi token configuration does not allow null or wildcard as key: " + key);
+                    }
+
+                    if (!key.length || key.length < 5) {
+                        throw new Error("Tokens should at least contain 6 characters.. " + key);
+                    }
+
                     return this.accessConfig[key];
                 }).forEach((acv) => {
                     if (!Array.isArray(acv) && acv !== WILDCARD) {
@@ -46,7 +56,25 @@ export default class AccessControll {
             }
 
             debug("Access configuration is valid.");
+
+            const anonymisedAccessConfig: any = {};
+            let i = 0;
+            Object.keys(this.accessConfig).forEach((token) => {
+                anonymisedAccessConfig[`${i}_${this.anonymiseToken(token)}`] = this.accessConfig[token];
+                i++;
+            });
+            debug("Configured Access Controll: ", anonymisedAccessConfig);
         }
+    }
+
+    private anonymiseToken(token: string): string {
+
+        let anonymisedToken = token.substr(0, 3);
+        for (let i = 3; i < token.length; i++) {
+            anonymisedToken += "#";
+        }
+
+        return anonymisedToken;
     }
 
     public topicAccessAllowedForRequest(req: any, topic: string) {

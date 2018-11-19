@@ -52,7 +52,7 @@ export default class HttpServer {
         app.use(bodyParser.json());
 
         app.use("/", routeRoot(this.zamza));
-        app.use("/api/topic-config", routeTopicConfig(this.zamza));
+        app.use("/api/config", routeTopicConfig(this.zamza));
         app.use("/api/info", routeInfo(this.zamza));
         app.use("/api/fetch", routeFetch(this.zamza));
         app.use("/api/produce", routeProduce(this.zamza));

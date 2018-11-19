@@ -56,8 +56,15 @@ const routeManage = (zamza: Zamza) => {
         };
 
         (kafkaMessage as any).timestamp = timestamp;
-        const result = await messageHandler.handleMessage(kafkaMessage, false);
-        res.status(result ? 202 : 500).end();
+
+        try {
+            const result = await messageHandler.handleMessage(kafkaMessage, false);
+            res.status(result ? 202 : 500).end();
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
     });
 
     router.delete("/key-index/:topic/:key/:partition", async (req, res) => {
@@ -74,21 +81,29 @@ const routeManage = (zamza: Zamza) => {
             return;
         }
 
-        if (produceTombstone) {
+        try {
 
-            const configuration = messageHandler.findConfigForTopic(req.params.topic);
-            if (!configuration || configuration.cleanupPolicy !== "compact") {
-                res.status(400).json({
-                    error: "Cannot produce tombstone, as topic config show no 'compact' cleanup policy",
-                });
-                return;
+            if (produceTombstone) {
+
+                const configuration = messageHandler.findConfigForTopic(req.params.topic);
+                if (!configuration || configuration.cleanupPolicy !== "compact") {
+                    res.status(400).json({
+                        error: "Cannot produce tombstone, as topic config show no 'compact' cleanup policy",
+                    });
+                    return;
+                }
+
+                await producer.produceTombstone(req.params.topic, req.params.key, req.params.partition);
             }
 
-            await producer.produceTombstone(req.params.topic, req.params.key, req.params.partition);
-        }
+            await keyIndexModel.delete(req.params.topic, req.params.key, fromStream);
+            res.status(204).end();
 
-        await keyIndexModel.delete(req.params.topic, req.params.key, fromStream);
-        res.status(204).end();
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
     });
 
     return router;

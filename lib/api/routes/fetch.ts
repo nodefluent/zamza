@@ -35,7 +35,13 @@ const routeFetch = (zamza: Zamza) => {
             return;
         }
 
-        res.status(200).json(await keyIndexModel.getInfoForTopic(topic));
+        try {
+            res.status(200).json(await keyIndexModel.getInfoForTopic(topic));
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
     });
 
     router.get("/:topic/find/key/:key", async (req, res) => {
@@ -49,7 +55,13 @@ const routeFetch = (zamza: Zamza) => {
             return;
         }
 
-        res.status(200).json(await keyIndexModel.findMessageForKey(topic, key));
+        try {
+            res.status(200).json(await keyIndexModel.findMessageForKey(topic, key));
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
     });
 
     router.get("/:topic/find/offset/:partition/:offset", async (req, res) => {
@@ -64,9 +76,15 @@ const routeFetch = (zamza: Zamza) => {
             return;
         }
 
-        partition = parseInt(partition, undefined);
-        offset = parseInt(offset, undefined);
-        res.status(200).json(await keyIndexModel.findMessageForPartitionAndOffset(topic, partition, offset));
+        try {
+            partition = parseInt(partition, undefined);
+            offset = parseInt(offset, undefined);
+            res.status(200).json(await keyIndexModel.findMessageForPartitionAndOffset(topic, partition, offset));
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
     });
 
     router.get("/:topic/find/timestamp/:valueOf", async (req, res) => {
@@ -80,8 +98,14 @@ const routeFetch = (zamza: Zamza) => {
             return;
         }
 
-        res.status(200).json(await keyIndexModel.findMessageForTimestamp(topic,
-            parseInt(req.params.valueOf, undefined)));
+        try {
+            res.status(200).json(await keyIndexModel.findMessageForTimestamp(topic,
+                parseInt(req.params.valueOf, undefined)));
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
     });
 
     router.get("/:topic/range/key/:key/:range", async (req, res) => {
@@ -95,8 +119,14 @@ const routeFetch = (zamza: Zamza) => {
             return;
         }
 
-        res.status(200).json(await keyIndexModel.findRangeAroundKey(topic, key,
-            parseInt(range, undefined)));
+        try {
+            res.status(200).json(await keyIndexModel.findRangeAroundKey(topic, key,
+                parseInt(range, undefined)));
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
     });
 
     router.get("/:topic/range/latest/:count", async (req, res) => {
@@ -110,8 +140,14 @@ const routeFetch = (zamza: Zamza) => {
             return;
         }
 
-        res.status(200).json(await keyIndexModel.getRangeFromLatest(topic,
-            parseInt(count, undefined)));
+        try {
+            res.status(200).json(await keyIndexModel.getRangeFromLatest(topic,
+                parseInt(count, undefined)));
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
     });
 
     router.get("/:topic/range/earliest/:count", async (req, res) => {
@@ -125,8 +161,14 @@ const routeFetch = (zamza: Zamza) => {
             return;
         }
 
-        res.status(200).json(await keyIndexModel.getRangeFromEarliest(topic,
-            parseInt(count, undefined)));
+        try {
+            res.status(200).json(await keyIndexModel.getRangeFromEarliest(topic,
+                parseInt(count, undefined)));
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
     });
 
     router.get("/:topic/paginate/stoe/:skip/:limit", async (req, res) => {
@@ -140,8 +182,14 @@ const routeFetch = (zamza: Zamza) => {
             return;
         }
 
-        res.status(200).json(await keyIndexModel.paginateThroughTopic(topic,
-            parseInt(skip, undefined), parseInt(limit, undefined), -1));
+        try {
+            res.status(200).json(await keyIndexModel.paginateThroughTopic(topic,
+                parseInt(skip, undefined), parseInt(limit, undefined), -1));
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
     });
 
     router.get("/:topic/paginate/etos/:skip/:limit", async (req, res) => {
@@ -155,8 +203,14 @@ const routeFetch = (zamza: Zamza) => {
             return;
         }
 
-        res.status(200).json(await keyIndexModel.paginateThroughTopic(topic,
-            parseInt(skip, undefined), parseInt(limit, undefined), 1));
+        try {
+            res.status(200).json(await keyIndexModel.paginateThroughTopic(topic,
+                parseInt(skip, undefined), parseInt(limit, undefined), 1));
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
     });
 
     return router;

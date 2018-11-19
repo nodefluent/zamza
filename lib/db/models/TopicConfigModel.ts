@@ -46,6 +46,10 @@ export class TopicConfigModel {
         debug("Registered model with schema.");
     }
 
+    public get(topic: string): Promise<TopicConfig> {
+        return this.model.findOne({ topic }).lean().exec();
+    }
+
     public async listAsTopics(): Promise<string[]> {
         const topicConfigs = await this.list();
         return topicConfigs.map((topicConfig) => topicConfig.topic);

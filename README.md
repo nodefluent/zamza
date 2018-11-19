@@ -48,7 +48,8 @@ _Disclaimer: Depending on the size of your Kafka cluster (and topics..) you will
 
 ## Install
 
-As simple as `npm i -g zamza`.
+As simple as `yarn add global zamza`.
+(_NOTE: In case you dont have yarn run `npm i -g yarn` first._)
 
 ## Run
 

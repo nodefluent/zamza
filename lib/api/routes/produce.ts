@@ -39,11 +39,16 @@ const routeProduce = (zamza: Zamza) => {
             value,
         } = req.body;
 
-        const result = await producer.produceMessage(topic, partition, key, value);
-
-        res.status(202).json({
-            result,
-        });
+        try {
+            const result = await producer.produceMessage(topic, partition, key, value);
+            res.status(202).json({
+                result,
+            });
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
     });
 
     return router;
