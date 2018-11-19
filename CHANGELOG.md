@@ -1,6 +1,6 @@
 # zamza CHANGELOG
 
-## 2018-11-19, Version 0.17.0
+## 2018-11-19, Version 0.17.0-0.18.0
 
 * fixing bug in message handle on bad message keys
 

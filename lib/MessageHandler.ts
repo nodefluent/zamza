@@ -110,9 +110,16 @@ export default class MessageHandler {
                     this.metrics.inc("processed_messages_compact");
                     await this.keyIndexModel.upsert(keyIndex);
                 } else {
+
+                    if (!keyAsString) {
+                        debug("Dropping message because of bad format, cannot delete-compact with a missing key",
+                            message.key, message.topic, message.partition, message.offset);
+                        return false;
+                    }
+
                     // a kafka message with a NULL value on a compacted topic is a tombstone
                     this.metrics.inc("processed_messages_tombstone");
-                    await this.keyIndexModel.delete(message.topic, (message as any).key, fromStream);
+                    await this.keyIndexModel.delete(message.topic, keyAsString as string, fromStream);
                 }
                 break;
 
