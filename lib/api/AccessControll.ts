@@ -112,7 +112,7 @@ export default class AccessControll {
             return true;
         }
 
-        if (configuration.indexOf(topic) !== -1) {
+        if (Array.isArray(configuration) && configuration.indexOf(topic) !== -1) {
             this.metrics.inc("access_good");
             return true;
         }
@@ -143,6 +143,11 @@ export default class AccessControll {
         }
 
         if (configuration === WILDCARD) {
+            this.metrics.inc("access_good");
+            return true;
+        }
+
+        if (Array.isArray(configuration) && configuration.indexOf(WILDCARD) !== -1) {
             this.metrics.inc("access_good");
             return true;
         }

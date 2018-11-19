@@ -10,6 +10,7 @@ scripts/
 yarn-error.log
 index.ts
 *.map
+*.d.ts
 Dockerfile
 CHANGELOG.md
 docker-compose.yml

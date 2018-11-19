@@ -1,5 +1,9 @@
 # zamza CHANGELOG
 
+## 2018-11-19, Version 0.11.1
+
+* fixed bug in wildcard access controll
+
 ## 2018-11-19, Version 0.11.0
 
 * added more endpoints for topic configuration (/many and /:topic)
