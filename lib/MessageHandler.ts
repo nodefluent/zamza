@@ -21,7 +21,7 @@ export default class MessageHandler {
 
     constructor(zamza: Zamza) {
         this.mongoPoller = zamza.mongoPoller;
-        this.keyIndexModel = zamza.mongoWrapper.getKeyIndexModel();
+        this.keyIndexModel = zamza.mongoWrapper.getKeyIndex();
         this.metrics = zamza.metrics;
         this.mongoWrapper = zamza.mongoWrapper;
     }

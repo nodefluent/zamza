@@ -10,5 +10,6 @@ export interface ZamzaConfig {
     jobs?: {
         cleanUpDeleteTimeoutMs?: number;
         topicConfigPollingMs?: number;
+        metadataFetcherMs?: number;
     };
 }

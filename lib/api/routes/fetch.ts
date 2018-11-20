@@ -4,14 +4,13 @@ import Zamza from "../../Zamza";
 const routeFetch = (zamza: Zamza) => {
 
     const router = express.Router();
-    const keyIndexModel = zamza.mongoWrapper.getKeyIndexModel();
+    const keyIndexModel = zamza.mongoWrapper.getKeyIndex();
 
     router.get("/", (req, res) => {
         res.json({
             parent: "/api",
             self: "/api/fetch",
             children: [
-                "/api/fetch/:topic/info",
                 "/api/fetch/:topic/find/key/:key",
                 "/api/fetch/:topic/find/offset/:partition/:offset",
                 "/api/fetch/:topic/find/timestamp/:valueOf",
@@ -22,26 +21,6 @@ const routeFetch = (zamza: Zamza) => {
                 "/api/fetch/:topic/paginate/etos/:skip/:limit",
             ],
         });
-    });
-
-    router.get("/:topic/info", async (req, res) => {
-
-        const {topic} = req.params;
-
-        if (!res.locals.access.topicAccessAllowedForRequest(req, topic)) {
-            res.status(403).json({
-                error: "Access not allowed, for this topic",
-            });
-            return;
-        }
-
-        try {
-            res.status(200).json(await keyIndexModel.getInfoForTopic(topic));
-        } catch (error) {
-            res.status(500).json({
-                error: "An error occured " + error.message,
-            });
-        }
     });
 
     router.get("/:topic/find/key/:key", async (req, res) => {

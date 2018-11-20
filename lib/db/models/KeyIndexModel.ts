@@ -1,9 +1,9 @@
 import * as Debug from "debug";
 import * as murmur from "murmurhash";
 const debug = Debug("zamza:model:keyindex");
-import moment = require("moment");
+import * as moment from "moment";
 
-import { KeyIndex } from "../../interfaces";
+import { KeyIndex, TopicMetadata } from "../../interfaces";
 import Zamza from "../../Zamza";
 import { Metrics } from "../../Metrics";
 
@@ -100,7 +100,154 @@ export class KeyIndexModel {
         });
     }
 
-    public async getInfoForTopic(topic: string) {
+    public async getMetadataForTopic(topic: string): Promise<TopicMetadata> {
+
+        const startTime = Date.now();
+
+        const [
+            partitions,
+            earliestOffset,
+            latestOffset,
+            earliestMessage,
+            latestMessage,
+        ] = await Promise.all([
+            this.getPartitionCountsForTopic(topic),
+            this.getEarliestOffset(topic),
+            this.getLatestOffset(topic),
+            this.getEarliestTimestamp(topic),
+            this.getLatestTimestamp(topic),
+        ]);
+
+        const counts = this.partitionsToTotalCount(partitions);
+        const duration = Date.now() - startTime;
+        this.metrics.set("mongo_keyindex_info_ms", duration);
+
+        return {
+            topic,
+            messageCount: counts.size,
+            partitionCount: counts.count,
+            partitions,
+            earliestOffset,
+            latestOffset,
+            earliestMessage,
+            latestMessage,
+            timestamp: moment().valueOf(),
+        };
+    }
+
+    private partitionsToTotalCount(partitions: any) {
+
+        let size = 0;
+        let count = 0;
+
+        Object.keys(partitions).forEach((key) => {
+            count++;
+            size += partitions[key];
+        });
+
+        return {
+            count,
+            size,
+        };
+    }
+
+    public async getEarliestOffset(topic: string) {
+
+        const startTime = Date.now();
+
+        const result = await this.model.aggregate([
+              {
+                $match: {
+                    topic: this.hash(topic),
+                },
+              },
+              {
+                $group: {
+                  _id: {},
+                  minOffset: { $min: "$offset" },
+                },
+              },
+        ]);
+
+        const duration = Date.now() - startTime;
+        this.metrics.set("mongo_keyindex_info_earliest_offset_ms", duration);
+
+        return result.length ? result[0].minOffset : -1;
+    }
+
+    public async getLatestOffset(topic: string) {
+
+        const startTime = Date.now();
+
+        const result = await this.model.aggregate([
+              {
+                $match: {
+                    topic: this.hash(topic),
+                },
+              },
+              {
+                $group: {
+                  _id: {},
+                  maxOffset: { $max: "$offset" },
+                },
+              },
+        ]);
+
+        const duration = Date.now() - startTime;
+        this.metrics.set("mongo_keyindex_info_latest_offset_ms", duration);
+
+        return result.length ? result[0].maxOffset : -1;
+    }
+
+    public async getEarliestTimestamp(topic: string) {
+
+        const startTime = Date.now();
+
+        const result = await this.model.aggregate([
+              {
+                $match: {
+                    topic: this.hash(topic),
+                },
+              },
+              {
+                $group: {
+                  _id: {},
+                  minTimestamp: { $min: "$timestamp" },
+                },
+              },
+        ]);
+
+        const duration = Date.now() - startTime;
+        this.metrics.set("mongo_keyindex_info_earliest_ts_ms", duration);
+
+        return result.length ? result[0].minTimestamp : -1;
+    }
+
+    public async getLatestTimestamp(topic: string) {
+
+        const startTime = Date.now();
+
+        const result = await this.model.aggregate([
+              {
+                $match: {
+                    topic: this.hash(topic),
+                },
+              },
+              {
+                $group: {
+                  _id: {},
+                  maxTimestamp: { $max: "$timestamp" },
+                },
+              },
+        ]);
+
+        const duration = Date.now() - startTime;
+        this.metrics.set("mongo_keyindex_info_latest_ts_ms", duration);
+
+        return result.length ? result[0].maxTimestamp : -1;
+    }
+
+    public async getPartitionCountsForTopic(topic: string) {
 
         const startTime = Date.now();
 
@@ -119,28 +266,15 @@ export class KeyIndexModel {
             },
         ]);
 
-        const earliestOffsets: any[] = [];
-        const latestOffsets: any[] = [];
-
-        const earliestMessage = 0;
-        const latestMessage = 0;
-
         const duration = Date.now() - startTime;
-        this.metrics.set("mongo_keyindex_info_ms", duration);
+        this.metrics.set("mongo_keyindex_info_partition_ms", duration);
 
-        return {
-            topic,
-            partitions: partitionAggregation.map((aggregatedPartition: any) => {
-                return {
-                    partition: aggregatedPartition._id.partition,
-                    size: aggregatedPartition.count,
-                };
-            }),
-            earliestOffsets,
-            latestOffsets,
-            earliestMessage,
-            latestMessage,
-        };
+        const partitions: any = {};
+        partitionAggregation.forEach((aggregatedPartition: any) => {
+            partitions[aggregatedPartition._id.partition] = aggregatedPartition.count;
+        });
+
+        return partitions;
     }
 
     public async findMessageForKey(topic: string, key: string) {

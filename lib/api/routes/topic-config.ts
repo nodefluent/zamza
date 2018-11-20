@@ -6,7 +6,8 @@ const routeTopicConfig = (zamza: Zamza) => {
 
     const router = express.Router();
     const topicConfigModel = zamza.mongoWrapper.getTopicConfig();
-    const keyIndexModel = zamza.mongoWrapper.getKeyIndexModel();
+    const keyIndexModel = zamza.mongoWrapper.getKeyIndex();
+    const topicMetadataModel = zamza.mongoWrapper.getTopicMetadata();
 
     router.get("/", (req, res) => {
         res.json({
@@ -147,6 +148,7 @@ const routeTopicConfig = (zamza: Zamza) => {
         try {
             const topic = req.params.topic;
             await topicConfigModel.delete(topic);
+            await topicMetadataModel.delete(topic);
 
             if (req.query.purge) {
                 await keyIndexModel.deleteForTopic(topic);

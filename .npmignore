@@ -16,3 +16,4 @@ CHANGELOG.md
 docker-compose.yml
 dockertest.sh
 bin/docker.json
+grafana.json

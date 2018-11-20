@@ -79,5 +79,6 @@ module.exports = {
     jobs: {
         cleanUpDeleteTimeoutMs: 60000,
         topicConfigPollingMs: 15000,
+        metadataFetcherMs: 12 * 62000,
     },
 };

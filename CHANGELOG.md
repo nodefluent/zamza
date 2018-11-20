@@ -1,5 +1,13 @@
 # zamza CHANGELOG
 
+## 2018-11-20, Version 0.19.0
+
+* **BREAKING** moved /api/fetch/info to /api/info/metadata
+* added LockModel to handle job lockings
+* added TopicMetadataModel to store fetched topic metadatas
+* /api/info/metadata will now only serve cached metadata from mongo
+* added MongoFetcher as new job to handle contant updating of topic metadata in background
+
 ## 2018-11-19, Version 0.17.0-0.18.0
 
 * fixing bug in message handle on bad message keys

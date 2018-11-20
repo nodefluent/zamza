@@ -12,16 +12,15 @@ export default class MongoPoller extends EventEmitter {
 
     public collected: { topicConfigs: TopicConfig[] };
 
-    private readonly mongoWrapper: MongoWrapper;
     private readonly metrics: Metrics;
-    private topicConfigModel: TopicConfigModel | null = null;
+    private readonly topicConfigModel: TopicConfigModel;
     private intv: any;
     private topicConfigHash: number;
 
     constructor(mongoWrapper: MongoWrapper, metrics: Metrics) {
         super();
 
-        this.mongoWrapper = mongoWrapper;
+        this.topicConfigModel = mongoWrapper.getTopicConfig();
         this.metrics = metrics;
         this.intv = null;
         this.topicConfigHash = 0;
@@ -31,10 +30,6 @@ export default class MongoPoller extends EventEmitter {
     }
 
     public async start(intervalMs = 15000) {
-
-        if (!this.topicConfigModel) {
-            this.topicConfigModel = this.mongoWrapper.getTopicConfig();
-        }
 
         this.close();
 
@@ -68,11 +63,6 @@ export default class MongoPoller extends EventEmitter {
     private async onInterval() {
 
         this.metrics.inc("job_poll_ran");
-
-        if (!this.topicConfigModel) {
-            debug("TopicConfigModel not yet ready");
-            return;
-        }
 
         const topicConfigs = await this.topicConfigModel.list();
         this.metrics.set("configured_topics", topicConfigs.length);

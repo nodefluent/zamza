@@ -7,7 +7,7 @@ import { KafkaMessage } from "sinek";
 const routeManage = (zamza: Zamza) => {
 
     const router = express.Router();
-    const keyIndexModel = zamza.mongoWrapper.getKeyIndexModel();
+    const keyIndexModel = zamza.mongoWrapper.getKeyIndex();
     const messageHandler = zamza.messageHandler;
     const producer = zamza.producer;
 

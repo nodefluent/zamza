@@ -13,7 +13,7 @@ export default class CleanUpDeleteJob {
     private halt: boolean;
 
     constructor(zamza: Zamza) {
-        this.keyIndexModel = zamza.mongoWrapper.getKeyIndexModel();
+        this.keyIndexModel = zamza.mongoWrapper.getKeyIndex();
         this.metrics = zamza.metrics;
         this.t = null;
         this.halt = false;

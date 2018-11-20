@@ -10,6 +10,7 @@ import MessageHandler from "./MessageHandler";
 import Consumer from "./kafka/Consumer";
 import Producer from "./kafka/Producer";
 import { Metrics } from "./Metrics";
+import MetadataFetcher from "./db/MetadataFetcher";
 
 import { ZamzaConfig } from "./interfaces";
 
@@ -28,6 +29,7 @@ export default class Zamza {
     public readonly discovery: Discovery;
     public readonly cleanUpDeleteJob: CleanUpDeleteJob;
     public readonly metrics: Metrics;
+    public readonly metadataFetcher: MetadataFetcher;
 
     private alive: boolean = true;
     private ready: boolean = false;
@@ -48,6 +50,7 @@ export default class Zamza {
         this.consumer = new Consumer(this.config.kafka, this);
         this.messageHandler = new MessageHandler(this);
         this.cleanUpDeleteJob = new CleanUpDeleteJob(this);
+        this.metadataFetcher = new MetadataFetcher(this.mongoWrapper, this.metrics);
     }
 
     public static isProduction(): boolean {
@@ -81,6 +84,10 @@ export default class Zamza {
         process.on("SIGINT", this.shutdownGracefully.bind(this));
         process.on("SIGUSR1", this.shutdownGracefully.bind(this));
         process.on("SIGUSR2", this.shutdownGracefully.bind(this));
+
+        process.on("warning", (warning: Error) => {
+            debug("Warning:", warning.message);
+        });
 
         process.on("uncaughtException", (error: Error) => {
             debug("Unhandled Exception: ", error.message, error.stack);
@@ -123,6 +130,7 @@ export default class Zamza {
         });
 
         await this.mongoPoller.start(this.config.jobs ? this.config.jobs.topicConfigPollingMs : undefined);
+        await this.metadataFetcher.start(this.config.jobs ? this.config.jobs.metadataFetcherMs : undefined);
         await this.discovery.start(this.consumer.getKafkaClient());
         await this.httpServer.start();
         this.cleanUpDeleteJob.start(this.config.jobs ? this.config.jobs.cleanUpDeleteTimeoutMs : undefined);
@@ -139,6 +147,7 @@ export default class Zamza {
 
         this.cleanUpDeleteJob.close();
         this.mongoPoller.close();
+        this.metadataFetcher.close();
         this.discovery.close();
         this.httpServer.close();
         await this.consumer.close();

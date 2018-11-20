@@ -4,3 +4,4 @@ export * from "./DiscoveryConfig";
 export * from "./HttpConfig";
 export * from "./KafkaConfig";
 export * from "./KeyIndex";
+export * from "./TopicMetadata";
