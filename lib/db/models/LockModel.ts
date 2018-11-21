@@ -99,7 +99,7 @@ export class LockModel {
 
     public async removeLock(name: string): Promise<void> {
 
-        await this.model.removeOne({
+        await this.model.deleteOne({
             name,
             instanceId: this.instanceId,
             timestamp : { $gte : moment().valueOf() },

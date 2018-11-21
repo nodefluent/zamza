@@ -1,5 +1,9 @@
 # zamza CHANGELOG
 
+## 2018-11-20, Version 0.21.0
+
+* fixed bug in lock model delete
+
 ## 2018-11-20, Version 0.20.0
 
 * removing locks after metadatafetcher is done
