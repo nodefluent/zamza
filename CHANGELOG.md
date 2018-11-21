@@ -1,5 +1,12 @@
 # zamza CHANGELOG
 
+## 2018-11-20, Version 0.20.0
+
+* removing locks after metadatafetcher is done
+* removed cleanupdeletejob and replaced with native mongodb index ttl
+* fixed old name in api description
+* upgraded mongoose dependency
+
 ## 2018-11-20, Version 0.19.0
 
 * **BREAKING** moved /api/fetch/info to /api/info/metadata

@@ -97,6 +97,17 @@ export class LockModel {
         }
     }
 
+    public async removeLock(name: string): Promise<void> {
+
+        await this.model.removeOne({
+            name,
+            instanceId: this.instanceId,
+            timestamp : { $gte : moment().valueOf() },
+        });
+
+        this.metrics.inc("mongo_lock_removed");
+    }
+
     public delete(name: string) {
         return this.model.deleteMany({name}).exec();
     }

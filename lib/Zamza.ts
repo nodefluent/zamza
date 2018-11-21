@@ -3,7 +3,6 @@ const debug = Debug("zamza:zamza");
 
 import MongoWrapper from "./db/MongoWrapper";
 import MongoPoller from "./db/MongoPoller";
-import CleanUpDeleteJob from "./db/CleanUpDeleteJob";
 import Discovery from "./kafka/Discovery";
 import HttpServer from "./api/HttpServer";
 import MessageHandler from "./MessageHandler";
@@ -27,7 +26,6 @@ export default class Zamza {
     public readonly mongoWrapper: MongoWrapper;
     public readonly mongoPoller: MongoPoller;
     public readonly discovery: Discovery;
-    public readonly cleanUpDeleteJob: CleanUpDeleteJob;
     public readonly metrics: Metrics;
     public readonly metadataFetcher: MetadataFetcher;
 
@@ -49,7 +47,6 @@ export default class Zamza {
         this.httpServer = new HttpServer(this.config.http, this);
         this.consumer = new Consumer(this.config.kafka, this);
         this.messageHandler = new MessageHandler(this);
-        this.cleanUpDeleteJob = new CleanUpDeleteJob(this);
         this.metadataFetcher = new MetadataFetcher(this.mongoWrapper, this.metrics);
     }
 
@@ -133,7 +130,6 @@ export default class Zamza {
         await this.metadataFetcher.start(this.config.jobs ? this.config.jobs.metadataFetcherMs : undefined);
         await this.discovery.start(this.consumer.getKafkaClient());
         await this.httpServer.start();
-        this.cleanUpDeleteJob.start(this.config.jobs ? this.config.jobs.cleanUpDeleteTimeoutMs : undefined);
 
         this.setReadyState(true);
         debug("Running..");
@@ -145,7 +141,6 @@ export default class Zamza {
         this.setAliveState(false);
         this.setReadyState(false);
 
-        this.cleanUpDeleteJob.close();
         this.mongoPoller.close();
         this.metadataFetcher.close();
         this.discovery.close();

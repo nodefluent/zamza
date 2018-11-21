@@ -61,7 +61,9 @@ export default class MetadataFetcher {
         const topicConfigs = await this.topicConfigModel.listAsTopics();
         await Bluebird.map(topicConfigs, async (topic: string) => {
 
-            if (!await this.lockModel.getLock(`metadata:${topic}`, 3 * 60000)) {
+            const lockName = `metadata:${topic}`;
+
+            if (!await this.lockModel.getLock(lockName, 3 * 60000)) {
                 return; // did not get a lock for this topic
             }
 
@@ -71,6 +73,7 @@ export default class MetadataFetcher {
             // got lock for topic, fetch and store metadata
             const topicMetadata = await this.keyIndexModel.getMetadataForTopic(topic);
             await this.topicMetadataModel.upsert(topicMetadata);
+            await this.lockModel.removeLock(lockName);
 
             const innerDuration = Date.now() - innerStartTime;
             debug("Fetched and stored", topic, "metadata in", innerDuration, "ms");

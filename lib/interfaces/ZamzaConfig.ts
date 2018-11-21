@@ -8,7 +8,6 @@ export interface ZamzaConfig {
     mongo: MongoConfig;
     http: HttpConfig;
     jobs?: {
-        cleanUpDeleteTimeoutMs?: number;
         topicConfigPollingMs?: number;
         metadataFetcherMs?: number;
     };

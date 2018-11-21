@@ -27,7 +27,7 @@ const routeRoot = (zamza: Zamza) => {
             children: [
                 "/api/info",
                 "/api/fetch",
-                "/api/topic-config",
+                "/api/config",
                 "/api/produce",
                 "/api/manage",
             ],

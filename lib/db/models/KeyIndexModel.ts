@@ -39,13 +39,6 @@ export class KeyIndexModel {
 
         // single lookup indices
         schema.index({ key: 1, type: -1 });
-        // schema.index({ topic: 1, type: -1 });
-        // schema.index({ timestamp: 1, type: -1 });
-        // schema.index({ timestamp: 1, type: 1 });
-        // schema.index({ deleteAt: 1, type: -1 });
-        // schema.index({ partition: 1, type: -1 });
-        // schema.index({ offset: 1, type: -1 });
-        // schema.index({ fromStream: 1, type: -1 });
 
         // compound index
         schema.index({ topic: 1, key: 1 }, { unique: false });
@@ -55,6 +48,9 @@ export class KeyIndexModel {
 
         schema.index({ topic: 1, timestamp: 1 }, { unique: false });
         schema.index({ topic: 1, timestamp: -1 }, { unique: false });
+
+        // ttl index
+        schema.index({ deleteAt: 1 }, { expireAfterSeconds: 0 });
 
         this.model = mongoose.model(this.name, schema);
 
@@ -418,18 +414,6 @@ export class KeyIndexModel {
             key: this.hash(key),
             fromStream,
         });
-    }
-
-    public removeOldDeletePolicyEntries() {
-        return this.model.deleteMany({
-            deleteAt: {
-                // $and doesnt work
-                // comparison operators only perform comparisons on fields
-                // where the BSON type matches the query value’s type
-                // should therefor ignore 'null' values
-                $lte: moment().valueOf(),
-            },
-        }).exec();
     }
 
     public deleteForTopic(topic: string) {

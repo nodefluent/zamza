@@ -84,7 +84,6 @@ const zamzaConfig = {
         },
     },
     jobs: {
-        cleanUpDeleteTimeoutMs: 60000,
         topicConfigPollingMs: 32000,
         metadataFetcherMs: 12 * 62000,
     },
