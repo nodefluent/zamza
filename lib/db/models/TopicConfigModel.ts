@@ -11,13 +11,13 @@ const ALLOWED_POLICIES = ["compact", "delete", "none"];
 export class TopicConfigModel {
 
     public readonly metrics: Metrics;
-    public readonly mongoWrapper: MongoWrapper;
+    public readonly mongoWrapper: MongoWrapper | null;
     public readonly name: string;
     private model: any;
 
-    constructor(zamza: Zamza) {
+    constructor(zamza: Zamza, mongoWrapper: MongoWrapper | null = null) {
         this.metrics = zamza.metrics;
-        this.mongoWrapper = zamza.mongoWrapper;
+        this.mongoWrapper = mongoWrapper;
         this.name = "topicconfig";
         this.model = null;
     }
@@ -95,7 +95,9 @@ export class TopicConfigModel {
         }
 
         // important to create indices before (key index model) topic gets first writes
-        this.mongoWrapper.getKeyIndex().ensureModelAndIndicesExist(topic);
+        if (this.mongoWrapper) {
+            this.mongoWrapper.getKeyIndex().ensureModelAndIndicesExist(topic);
+        }
 
         const document = {
             topic,

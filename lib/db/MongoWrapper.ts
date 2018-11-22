@@ -29,7 +29,7 @@ export default class MongoWrapper {
         Object.keys(Models)
         .map((key: string) => (Models as any)[key])
         .forEach((modelConstructor) => {
-            const model = new modelConstructor(zamza);
+            const model = new modelConstructor(zamza, this);
             model.registerModel(mongoose, Schema);
             this.models[model.name] = model;
         });

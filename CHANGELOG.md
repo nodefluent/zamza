@@ -1,6 +1,6 @@
 # zamza CHANGELOG
 
-## 2018-11-22, Version 0.22.0
+## 2018-11-22, Version 0.23.0
 
 * **BREAKING** changed key index schema from single collection to collection per topic
 * **BREAKING** changed pagination to run via _id native index instead of skip
