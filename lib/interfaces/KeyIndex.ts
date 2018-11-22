@@ -1,6 +1,5 @@
 export interface KeyIndex {
     key: number | null;
-    topic: number;
     timestamp: number;
     partition: number;
     offset: number;

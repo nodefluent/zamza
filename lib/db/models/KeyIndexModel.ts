@@ -2,28 +2,53 @@ import * as Debug from "debug";
 import * as murmur from "murmurhash";
 const debug = Debug("zamza:model:keyindex");
 import * as moment from "moment";
+import * as mongoose from "mongoose";
+import * as Bluebird from "bluebird";
 
 import { KeyIndex, TopicMetadata } from "../../interfaces";
 import Zamza from "../../Zamza";
 import { Metrics } from "../../Metrics";
+import MessageHandler from "../../MessageHandler";
+import Discovery from "../../kafka/Discovery";
 
 export class KeyIndexModel {
 
     public readonly metrics: Metrics;
+    public readonly discovery: Discovery;
     public readonly name: string;
-    private model: any;
+    private readonly models: any;
+    private mongoose: any;
+    private schemaConstructor: any;
 
     constructor(zamza: Zamza) {
         this.metrics = zamza.metrics;
+        this.discovery = zamza.discovery;
         this.name = "keyindex";
-        this.model = null;
+        this.models = {};
+        this.mongoose = null;
+        this.schemaConstructor = null;
     }
 
-    public registerModel(mongoose: any, schemaConstructor: any) {
+    public registerModel(mongoosePassed: any, schemaConstructor: any) {
+        this.mongoose = mongoosePassed;
+        this.schemaConstructor = schemaConstructor;
+        debug("Not creating any model now, as keyindex models are created per topic on the fly.");
+    }
+
+    public ensureModelAndIndicesExist(topic: string) {
+        this.getOrCreateModel(topic);
+    }
+
+    private getOrCreateModel(originalTopic: string) {
+
+        const topic = MessageHandler.cleanTopicNameForMetrics(originalTopic);
+
+        if (this.models[topic]) {
+            return this.models[topic];
+        }
 
         const schemaDefinition = {
             key: Number, // hashed
-            topic: Number, // hashed
             timestamp: Number,
             partition: Number,
             offset: Number,
@@ -35,26 +60,24 @@ export class KeyIndexModel {
             storedAt: Number,
         };
 
-        const schema = new schemaConstructor(schemaDefinition);
+        const schema = new this.schemaConstructor(schemaDefinition);
 
         // single lookup indices
         schema.index({ key: 1, type: -1 });
+        schema.index({ timestamp: 1, type: 1 });
+        schema.index({ timestamp: 1, type: -1 });
 
         // compound index
-        schema.index({ topic: 1, key: 1 }, { unique: false });
-        schema.index({ topic: 1, key: 1, fromStream: 1 }, { unique: false });
-        schema.index({ topic: 1, partition: 1 }, { unique: false });
-        schema.index({ topic: 1, partition: 1, offset: 1 }, { unique: false });
-
-        schema.index({ topic: 1, timestamp: 1 }, { unique: false });
-        schema.index({ topic: 1, timestamp: -1 }, { unique: false });
+        schema.index({ key: 1, fromStream: 1 }, { unique: false });
+        schema.index({ partition: 1 }, { unique: false });
+        schema.index({ partition: 1, offset: 1 }, { unique: false });
 
         // ttl index
         schema.index({ deleteAt: 1 }, { expireAfterSeconds: 0 });
 
-        this.model = mongoose.model(this.name, schema);
+        const model = this.mongoose.model(`${this.name}_${topic}`, schema);
 
-        this.model.on("index", (error: Error) => {
+        model.on("index", (error: Error) => {
 
             if (error) {
                 debug("Index creation failed", error.message);
@@ -63,7 +86,10 @@ export class KeyIndexModel {
             }
         });
 
-        debug("Registered model with schema.");
+        debug("Registered model with schema for topic", topic);
+        this.models[topic] = model;
+
+        return this.models[topic];
     }
 
     private hash(value: string): number {
@@ -71,7 +97,8 @@ export class KeyIndexModel {
     }
 
     private static cleanMessageResultForResponse(topic: string, message: KeyIndex):
-        {topic: string, partition: number, offset: number, key: Buffer, value: Buffer, timestamp: number} {
+        {$index: string, topic: string, partition: number, offset: number,
+            key: Buffer, value: Buffer, timestamp: number} {
 
         if (!message) {
             return message;
@@ -79,6 +106,7 @@ export class KeyIndexModel {
 
         const cleanedMessage: any = {};
 
+        cleanedMessage.$index = (message as any)._id; // important for pagination
         cleanedMessage.topic = topic; // cannot use message.topic, as its a hash
         cleanedMessage.partition = message.partition;
         cleanedMessage.offset = message.offset;
@@ -99,6 +127,7 @@ export class KeyIndexModel {
     public async getMetadataForTopic(topic: string): Promise<TopicMetadata> {
 
         const startTime = Date.now();
+        const partitionCountOfTopic = this.discovery.getPartitionCountOfTopic(topic, 40);
 
         const [
             partitions,
@@ -107,7 +136,7 @@ export class KeyIndexModel {
             earliestMessage,
             latestMessage,
         ] = await Promise.all([
-            this.getPartitionCountsForTopic(topic),
+            this.getPartitionCountsForTopic(topic, partitionCountOfTopic),
             this.getEarliestOffset(topic),
             this.getLatestOffset(topic),
             this.getEarliestTimestamp(topic),
@@ -151,12 +180,7 @@ export class KeyIndexModel {
 
         const startTime = Date.now();
 
-        const result = await this.model.aggregate([
-              {
-                $match: {
-                    topic: this.hash(topic),
-                },
-              },
+        const result = await this.getOrCreateModel(topic).aggregate([
               {
                 $group: {
                   _id: {},
@@ -175,12 +199,7 @@ export class KeyIndexModel {
 
         const startTime = Date.now();
 
-        const result = await this.model.aggregate([
-              {
-                $match: {
-                    topic: this.hash(topic),
-                },
-              },
+        const result = await this.getOrCreateModel(topic).aggregate([
               {
                 $group: {
                   _id: {},
@@ -199,12 +218,7 @@ export class KeyIndexModel {
 
         const startTime = Date.now();
 
-        const result = await this.model.aggregate([
-              {
-                $match: {
-                    topic: this.hash(topic),
-                },
-              },
+        const result = await this.getOrCreateModel(topic).aggregate([
               {
                 $group: {
                   _id: {},
@@ -223,12 +237,7 @@ export class KeyIndexModel {
 
         const startTime = Date.now();
 
-        const result = await this.model.aggregate([
-              {
-                $match: {
-                    topic: this.hash(topic),
-                },
-              },
+        const result = await this.getOrCreateModel(topic).aggregate([
               {
                 $group: {
                   _id: {},
@@ -243,17 +252,12 @@ export class KeyIndexModel {
         return result.length ? result[0].maxTimestamp : -1;
     }
 
-    public async getPartitionCountsForTopic(topic: string) {
+    public async getPartitionCountsForTopicViaAggregation(topic: string) {
 
         const startTime = Date.now();
 
-        const partitionAggregation = await this.model.aggregate([
-            { // Filter for specific topic
-                $match: {
-                    topic: this.hash(topic),
-                },
-            }, // Count all occurrences
-            { $group: {
+        const partitionAggregation = await this.getOrCreateModel(topic).aggregate([
+            { $group: { // Count all occurrences
                 _id: { // accumulator object
                     partition: "$partition",
                 },
@@ -263,7 +267,7 @@ export class KeyIndexModel {
         ]);
 
         const duration = Date.now() - startTime;
-        this.metrics.set("mongo_keyindex_info_partition_ms", duration);
+        this.metrics.set("mongo_keyindex_info_partition_aggregation_ms", duration);
 
         const partitions: any = {};
         partitionAggregation.forEach((aggregatedPartition: any) => {
@@ -273,12 +277,43 @@ export class KeyIndexModel {
         return partitions;
     }
 
+    public async getPartitionCountsForTopic(topic: string, partitionCount: number) {
+
+        const startTime = Date.now();
+        const model = this.getOrCreateModel(topic);
+
+        const partitions: number[] = [];
+        for (let i = 0; i < partitionCount; i++) {
+            partitions.push(i);
+        }
+
+        // although splitting a single query in multiple seems absurd, these counts run on the index
+        // and are a lot faster then the single aggregate query on top
+        const partitionCounts: any = await Bluebird.map(partitions, (partition: number) => {
+            return model.countDocuments({ partition }).then((count: number) => {
+                return {
+                    partition,
+                    count,
+                };
+            });
+        }, { concurrency: 3 });
+
+        const duration = Date.now() - startTime;
+        this.metrics.set("mongo_keyindex_info_partition_ms", duration);
+
+        const partitionResults: any = {};
+        partitionCounts.forEach((aggregatedPartition: any) => {
+            partitionResults[aggregatedPartition.partition] = aggregatedPartition.count;
+        });
+
+        return partitionResults;
+    }
+
     public async findMessageForKey(topic: string, key: string) {
 
         const startTime = Date.now();
 
-        const message = await this.model.findOne({
-            topic: this.hash(topic),
+        const message = await this.getOrCreateModel(topic).findOne({
             key: this.hash(key),
         }).lean().exec();
 
@@ -294,8 +329,7 @@ export class KeyIndexModel {
 
         const startTime = Date.now();
 
-        const message = await this.model.findOne({
-            topic: this.hash(topic),
+        const message = await this.getOrCreateModel(topic).findOne({
             partition,
             offset,
         }).lean().exec();
@@ -313,8 +347,7 @@ export class KeyIndexModel {
         const startTime = Date.now();
 
         // TODO: range this a little? use timestampValue???
-        const message = await this.model.findOne({
-            topic: this.hash(topic),
+        const message = await this.getOrCreateModel(topic).findOne({
             timestamp,
         }).lean().exec();
 
@@ -334,20 +367,43 @@ export class KeyIndexModel {
         };
     }
 
-    public async paginateThroughTopic(topic: string, skip: number = 0, limit: number = 50, order: number = -1) {
+    public async paginateThroughTopic(topic: string, skipToIndex: string | null,
+                                      limit: number = 50, order: number = -1) {
 
         if (limit > 2500) {
             throw new Error(limit + " is a huge limit size, please stay under 2500 per call.");
         }
 
-        debug("Paginating from", skip, "to", skip + limit, "on topic", topic, "order", order);
+        debug("Paginating from", skipToIndex, "to next", limit, "on topic", topic, "order", order);
+
+        let query = {};
+        if (skipToIndex && skipToIndex !== "null") {
+
+            // use last object id to find cursor, its a million times faster
+            // than using .skip() which does not use an index
+            let objectIdIndex = null;
+            try {
+                objectIdIndex = mongoose.Types.ObjectId(skipToIndex);
+                if (!mongoose.Types.ObjectId.isValid(objectIdIndex)) {
+                    throw new Error("Invalid ObjectID");
+                }
+            } catch (error) {
+                throw new Error("Provided skipToIndex is not a valid ObjectId: " + skipToIndex + ", " + error.message);
+            }
+
+            query = {
+                _id: { [order === 1 ? "$gt" : "$lt"]: objectIdIndex },
+            };
+        }
+
         const startTime = Date.now();
 
-        const messages = await this.model.find({
-            topic: this.hash(topic),
-        }).skip(skip).limit(limit).sort({
-            timestamp: order,
-        }).lean().exec();
+        const messages = await this.getOrCreateModel(topic)
+            .find(query)
+            .sort({ _id: order })
+            .limit(limit)
+            .lean()
+            .exec();
 
         const duration = Date.now() - startTime;
         this.metrics.set("mongo_keyindex_paginate_ms", duration);
@@ -358,18 +414,18 @@ export class KeyIndexModel {
     }
 
     public async getRangeFromLatest(topic: string, range: number = 50) {
-        return this.paginateThroughTopic(topic, 0, range, 1);
+        return this.paginateThroughTopic(topic, null, range, 1);
     }
 
     public async getRangeFromEarliest(topic: string, range: number = 50) {
-        return this.paginateThroughTopic(topic, 0, range, -1);
+        return this.paginateThroughTopic(topic, null, range, -1);
     }
 
-    public async insert(document: KeyIndex): Promise<KeyIndex> {
+    public async insert(topic: string, document: KeyIndex): Promise<KeyIndex> {
 
         const startTime = Date.now();
 
-        const result = await this.model.create(document);
+        const result = await this.getOrCreateModel(topic).create(document);
 
         const duration = Date.now() - startTime;
         this.metrics.set("mongo_keyindex_insert_ms", duration);
@@ -377,12 +433,11 @@ export class KeyIndexModel {
         return result;
     }
 
-    public async upsert(document: KeyIndex): Promise<KeyIndex> {
+    public async upsert(topic: string, document: KeyIndex): Promise<KeyIndex> {
 
         const startTime = Date.now();
 
         const query = {
-            topic: document.topic,
             key: document.key,
         };
 
@@ -390,7 +445,7 @@ export class KeyIndexModel {
             upsert: true,
         };
 
-        const result = await this.model.findOneAndUpdate(query, document, queryOptions).exec();
+        const result = await this.getOrCreateModel(topic).findOneAndUpdate(query, document, queryOptions).exec();
         const duration = Date.now() - startTime;
         this.metrics.set("mongo_keyindex_upsert_ms", duration);
 
@@ -409,8 +464,7 @@ export class KeyIndexModel {
             return Promise.reject(new Error("Cannot delete message without key"));
         }
 
-        return this.model.deleteMany({
-            topic: this.hash(topic),
+        return this.getOrCreateModel(topic).deleteMany({
             key: this.hash(key),
             fromStream,
         });
@@ -418,13 +472,6 @@ export class KeyIndexModel {
 
     public deleteForTopic(topic: string) {
         debug("Deleting all entries for topic", topic);
-        return this.model.deleteMany({
-            topic: this.hash(topic),
-        }).exec();
-    }
-
-    public truncateCollection() {
-        debug("Truncating collection");
-        return this.model.deleteMany({}).exec();
+        return this.getOrCreateModel(topic).deleteMany({}).exec();
     }
 }

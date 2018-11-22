@@ -61,7 +61,7 @@ const zamzaConfig = {
     },
     discovery: {
         enabled: true,
-        scanMs: 15000,
+        scanMs: 48000,
         topicBlacklist: [],
     },
     mongo: {
@@ -85,7 +85,7 @@ const zamzaConfig = {
     },
     jobs: {
         topicConfigPollingMs: 32000,
-        metadataFetcherMs: 12 * 62000,
+        metadataFetcherMs: 23 * 62000,
     },
 };
 

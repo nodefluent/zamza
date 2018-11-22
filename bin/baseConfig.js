@@ -59,7 +59,7 @@ module.exports = {
     },
     discovery: {
         enabled: true,
-        scanMs: 15000,
+        scanMs: 48000,
         topicBlacklist: [],
     },
     mongo: {
@@ -78,6 +78,6 @@ module.exports = {
     },
     jobs: {
         topicConfigPollingMs: 15000,
-        metadataFetcherMs: 12 * 62000,
+        metadataFetcherMs: 23 * 62000,
     },
 };

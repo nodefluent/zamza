@@ -40,9 +40,9 @@ export default class Zamza {
 
         this.config = config;
         this.metrics = new Metrics("zamza");
+        this.discovery = new Discovery(this.config.discovery, this.metrics);
         this.mongoWrapper = new MongoWrapper(this.config.mongo, this);
         this.mongoPoller = new MongoPoller(this.mongoWrapper, this.metrics);
-        this.discovery = new Discovery(this.config.discovery, this.metrics);
         this.producer = new Producer(this.config.kafka, this);
         this.httpServer = new HttpServer(this.config.http, this);
         this.consumer = new Consumer(this.config.kafka, this);
@@ -82,9 +82,10 @@ export default class Zamza {
         process.on("SIGUSR1", this.shutdownGracefully.bind(this));
         process.on("SIGUSR2", this.shutdownGracefully.bind(this));
 
+        /*
         process.on("warning", (warning: Error) => {
             debug("Warning:", warning.message);
-        });
+        }); */
 
         process.on("uncaughtException", (error: Error) => {
             debug("Unhandled Exception: ", error.message, error.stack);
@@ -126,9 +127,9 @@ export default class Zamza {
             this.consumer.adjustSubscriptions(topics);
         });
 
+        await this.discovery.start(this.consumer.getKafkaClient());
         await this.mongoPoller.start(this.config.jobs ? this.config.jobs.topicConfigPollingMs : undefined);
         await this.metadataFetcher.start(this.config.jobs ? this.config.jobs.metadataFetcherMs : undefined);
-        await this.discovery.start(this.consumer.getKafkaClient());
         await this.httpServer.start();
 
         this.setReadyState(true);

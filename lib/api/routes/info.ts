@@ -19,10 +19,11 @@ const routeInfo = (zamza: Zamza) => {
             children: [
                 "/api/info/consumer",
                 "/api/info/producer",
-                "/api/info/topics",
                 "/api/info/topics/discovered",
                 "/api/info/topics/configured",
                 "/api/info/topics/available",
+                "/api/info/topics",
+                "/topics/describe/:topic",
                 "/api/info/metadata",
                 "/api/info/metadata/:topic",
             ],
@@ -92,10 +93,21 @@ const routeInfo = (zamza: Zamza) => {
         }
     });
 
-    router.get("/topics", async (req, res) => {
+    router.get("/topics", (req, res) => {
 
         try {
-            res.status(200).json(await consumer.getTopicMetadata());
+            res.status(200).json(discovery.getMetadata());
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
+    });
+
+    router.get("/topics/describe/:topic", (req, res) => {
+
+        try {
+            res.status(200).json(discovery.getMetadataForTopic(req.params.topic));
         } catch (error) {
             res.status(500).json({
                 error: "An error occured " + error.message,

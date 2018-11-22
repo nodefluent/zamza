@@ -74,10 +74,8 @@ export default class Consumer {
         return this.consumer ? this.consumer.getStats() : {};
     }
 
-    public getTopicMetadata(): Promise<Array<{name: string, configs: null, partitions: any[]}>> {
-        return this.consumer ? this.consumer.getMetadata(1000).then((metadata) => {
-            return metadata.asTopicDescription();
-        }) : Promise.resolve([]);
+    public getTopicMetadata(): Promise<any> {
+        return this.consumer ? this.consumer.getMetadata(2500) : Promise.resolve({});
     }
 
     public async close() {

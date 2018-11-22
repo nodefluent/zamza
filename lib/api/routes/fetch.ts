@@ -17,8 +17,8 @@ const routeFetch = (zamza: Zamza) => {
                 "/api/fetch/:topic/range/key/:key/:range",
                 "/api/fetch/:topic/range/latest/:count",
                 "/api/fetch/:topic/range/earliest/:count",
-                "/api/fetch/:topic/paginate/stoe/:skip/:limit",
-                "/api/fetch/:topic/paginate/etos/:skip/:limit",
+                "/api/fetch/:topic/paginate/stoe/:skipToIndex/:limit",
+                "/api/fetch/:topic/paginate/etos/:skipToIndex/:limit",
             ],
         });
     });
@@ -150,9 +150,9 @@ const routeFetch = (zamza: Zamza) => {
         }
     });
 
-    router.get("/:topic/paginate/stoe/:skip/:limit", async (req, res) => {
+    router.get("/:topic/paginate/stoe/:skipToIndex/:limit", async (req, res) => {
 
-        const {topic, skip, limit} = req.params;
+        const {topic, skipToIndex = null, limit = "10"} = req.params;
 
         if (!res.locals.access.topicAccessAllowedForRequest(req, topic)) {
             res.status(403).json({
@@ -163,7 +163,7 @@ const routeFetch = (zamza: Zamza) => {
 
         try {
             res.status(200).json(await keyIndexModel.paginateThroughTopic(topic,
-                parseInt(skip, undefined), parseInt(limit, undefined), -1));
+                skipToIndex ? skipToIndex : null, parseInt(limit, undefined), -1));
         } catch (error) {
             res.status(500).json({
                 error: "An error occured " + error.message,
@@ -171,9 +171,9 @@ const routeFetch = (zamza: Zamza) => {
         }
     });
 
-    router.get("/:topic/paginate/etos/:skip/:limit", async (req, res) => {
+    router.get("/:topic/paginate/etos/:skipToIndex/:limit", async (req, res) => {
 
-        const {topic, skip, limit} = req.params;
+        const {topic, skipToIndex = null, limit = "10"} = req.params;
 
         if (!res.locals.access.topicAccessAllowedForRequest(req, topic)) {
             res.status(403).json({
@@ -184,7 +184,7 @@ const routeFetch = (zamza: Zamza) => {
 
         try {
             res.status(200).json(await keyIndexModel.paginateThroughTopic(topic,
-                parseInt(skip, undefined), parseInt(limit, undefined), 1));
+                skipToIndex ? skipToIndex : null, parseInt(limit, undefined), 1));
         } catch (error) {
             res.status(500).json({
                 error: "An error occured " + error.message,

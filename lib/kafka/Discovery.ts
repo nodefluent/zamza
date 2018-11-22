@@ -6,7 +6,7 @@ import { NConsumer } from "sinek";
 import { Metrics } from "../Metrics";
 
 const debug = Debug("zamza:discovery");
-const DEFAULT_DISCOVER_MS: number = 15000;
+const DEFAULT_DISCOVER_MS: number = 48000;
 
 export default class Discovery extends EventEmitter {
 
@@ -16,6 +16,7 @@ export default class Discovery extends EventEmitter {
     private scanTimeout: null | any;
     private lastTopicsHash: null | number;
     private discoveredTopics: string[];
+    public latestMetadata: any;
 
     public isActive: boolean;
 
@@ -30,6 +31,7 @@ export default class Discovery extends EventEmitter {
 
         this.lastTopicsHash = null;
         this.discoveredTopics = [];
+        this.latestMetadata = {};
     }
 
     public static arrayToFixedHash(array: string[]): number {
@@ -88,6 +90,17 @@ export default class Discovery extends EventEmitter {
             blacklist = JSON.parse(JSON.stringify(this.config.topicBlacklist));
         }
 
+        try {
+            if (this.kafkaClient) {
+                const metadata = await this.kafkaClient.getMetadata(3500);
+                if (metadata && Object.keys(metadata).length > 0) {
+                    this.latestMetadata = metadata;
+                }
+            }
+        } catch (error) {
+            debug("Failed to fetch metadata", error.message);
+        }
+
         topics = topics.filter((topic: string) => blacklist.indexOf(topic) === -1);
 
         const newTopicsHash = Discovery.arrayToFixedHash(topics);
@@ -135,6 +148,19 @@ export default class Discovery extends EventEmitter {
 
     public getDiscoveredTopics() {
         return this.discoveredTopics;
+    }
+
+    public getMetadata() {
+        return this.latestMetadata;
+    }
+
+    public getMetadataForTopic(topic: string) {
+        return this.latestMetadata.asTopicDescription ? this.latestMetadata.asTopicDescription(topic) : {};
+    }
+
+    public getPartitionCountOfTopic(topic: string, defaultCount: number = 40) {
+        return this.latestMetadata.getPartitionCountOfTopic ?
+            this.latestMetadata.getPartitionCountOfTopic(topic) : defaultCount;
     }
 
     public close() {

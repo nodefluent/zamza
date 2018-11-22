@@ -1,5 +1,13 @@
 # zamza CHANGELOG
 
+## 2018-11-22, Version 0.22.0
+
+* **BREAKING** changed key index schema from single collection to collection per topic
+* **BREAKING** changed pagination to run via _id native index instead of skip
+* fixed metadata fetching in consumer and producer
+* now continously fetching metadata in discovery
+* changed partition counting from aggregation to single counts per partition 
+
 ## 2018-11-20, Version 0.21.0
 
 * fixed bug in lock model delete

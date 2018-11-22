@@ -42,7 +42,7 @@ export default class MessageHandler {
         return null;
     }
 
-    private cleanTopicNameForMetrics(topic: string): string {
+    public static cleanTopicNameForMetrics(topic: string): string {
         return topic.replace(/-/g, "_");
     }
 
@@ -59,7 +59,7 @@ export default class MessageHandler {
             throw new Error("MongoDB connection is not established.");
         }
 
-        this.metrics.inc(`processed_messages_topic_${this.cleanTopicNameForMetrics(message.topic)}`);
+        this.metrics.inc(`processed_messages_topic_${MessageHandler.cleanTopicNameForMetrics(message.topic)}`);
 
         const startTime = Date.now();
         let keyAsBuffer: Buffer | null = null;
@@ -82,7 +82,6 @@ export default class MessageHandler {
 
         const keyIndex: KeyIndex = {
             key: keyAsString ? this.hash(keyAsString) : null,
-            topic: this.hash(message.topic),
             timestamp: messageHasTimestamp ? (message as any).timestamp : timeOfStoring,
             partition: message.partition,
             offset: message.offset,
@@ -108,7 +107,7 @@ export default class MessageHandler {
 
                 if (keyIndex.value !== null) {
                     this.metrics.inc("processed_messages_compact");
-                    await this.keyIndexModel.upsert(keyIndex);
+                    await this.keyIndexModel.upsert(message.topic, keyIndex);
                 } else {
 
                     if (!keyAsString) {
@@ -126,13 +125,13 @@ export default class MessageHandler {
             case "delete":
                 this.metrics.inc("processed_messages_delete");
                 keyIndex.deleteAt = moment(keyIndex.timestamp).add(topicConfig.retentionMs, "milliseconds").valueOf();
-                await this.keyIndexModel.insert(keyIndex);
+                await this.keyIndexModel.insert(message.topic, keyIndex);
                 break;
 
             default:
             case "none":
                 this.metrics.inc("processed_messages_none");
-                await this.keyIndexModel.insert(keyIndex);
+                await this.keyIndexModel.insert(message.topic, keyIndex);
                 break;
         }
 

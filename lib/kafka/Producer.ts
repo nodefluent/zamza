@@ -64,6 +64,10 @@ export default class Producer {
         return this.producer ? this.producer.getStats() : {};
     }
 
+    public getTopicMetadata(): Promise<any> {
+        return this.producer ? this.producer.getMetadata(2500) : Promise.resolve({});
+    }
+
     public async close() {
 
         debug("Closing..");

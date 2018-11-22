@@ -50,11 +50,21 @@ export class TopicMetadataModel {
     }
 
     public get(topic: string): Promise<TopicMetadata> {
-        return this.model.findOne({ topic }).lean().exec();
+        return this.model.findOne({ topic }).lean().exec().then((topicMetadata: any) => {
+            delete topicMetadata._id;
+            delete topicMetadata.__v;
+            return topicMetadata as TopicMetadata;
+        });
     }
 
     public list(): Promise<TopicMetadata[]> {
-        return this.model.find({}).lean().exec();
+        return this.model.find({}).lean().exec().then((topicMetadatas: any[]) => {
+            return topicMetadatas.map((topicMetadata) => {
+                delete topicMetadata._id;
+                delete topicMetadata.__v;
+                return topicMetadata as TopicMetadata;
+            });
+        });
     }
 
     public upsert(topicMetadata: TopicMetadata): Promise<any> {

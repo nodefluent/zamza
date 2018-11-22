@@ -4,17 +4,20 @@ const debug = Debug("zamza:model:topicconfig");
 
 import Zamza from "../../Zamza";
 import { Metrics } from "../../Metrics";
+import MongoWrapper from "../MongoWrapper";
 
 const ALLOWED_POLICIES = ["compact", "delete", "none"];
 
 export class TopicConfigModel {
 
     public readonly metrics: Metrics;
+    public readonly mongoWrapper: MongoWrapper;
     public readonly name: string;
     private model: any;
 
     constructor(zamza: Zamza) {
         this.metrics = zamza.metrics;
+        this.mongoWrapper = zamza.mongoWrapper;
         this.name = "topicconfig";
         this.model = null;
     }
@@ -90,6 +93,9 @@ export class TopicConfigModel {
         if (cleanupPolicy === "none" && (retentionMs || retentionMs > 0)) {
             throw new Error("cleanupPolicy 'none' requires retentionMs to be 0 or null.");
         }
+
+        // important to create indices before (key index model) topic gets first writes
+        this.mongoWrapper.getKeyIndex().ensureModelAndIndicesExist(topic);
 
         const document = {
             topic,
