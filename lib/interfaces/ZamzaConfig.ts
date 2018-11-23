@@ -11,4 +11,8 @@ export interface ZamzaConfig {
         topicConfigPollingMs?: number;
         metadataFetcherMs?: number;
     };
+    hooks?: {
+        enabled?: boolean;
+        timeout?: number;
+    };
 }

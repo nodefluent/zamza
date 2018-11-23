@@ -10,7 +10,9 @@ import * as pjson from "../../package.json";
 import Zamza from "../Zamza";
 import { HttpConfig } from "../interfaces";
 import { routeRoot, routeTopicConfig, routeInfo,
-         routeFetch, routeProduce, routeManage } from "./routes";
+         routeFetch, routeProduce, routeManage,
+         routeHook } from "./routes";
+
 import AccessControll from "./AccessControll";
 
 const DEFAULT_PORT = 1912;
@@ -53,6 +55,7 @@ export default class HttpServer {
 
         app.use("/", routeRoot(this.zamza));
         app.use("/api/config", routeTopicConfig(this.zamza));
+        app.use("/api/config", routeHook(this.zamza));
         app.use("/api/info", routeInfo(this.zamza));
         app.use("/api/fetch", routeFetch(this.zamza));
         app.use("/api/produce", routeProduce(this.zamza));

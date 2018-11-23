@@ -11,19 +11,27 @@ import { Metrics } from "./Metrics";
 import { KeyIndex } from "./interfaces";
 import { TopicConfig } from "./interfaces/TopicConfig";
 import MongoWrapper from "./db/MongoWrapper";
+import HookDealer from "./HookDealer";
+
+const RETRY_TOPIC = "__zamza_retry_topic";
+const REPLAY_TOPIC = "__zamza_replay_topic";
 
 export default class MessageHandler {
 
     private readonly mongoPoller: MongoPoller;
+    private readonly hookDealer: HookDealer;
     private readonly keyIndexModel: KeyIndexModel;
     private readonly metrics: Metrics;
     private readonly mongoWrapper: MongoWrapper;
+    private readonly hooksEnabled: boolean;
 
     constructor(zamza: Zamza) {
         this.mongoPoller = zamza.mongoPoller;
+        this.hookDealer = zamza.hookDealer;
         this.keyIndexModel = zamza.mongoWrapper.getKeyIndex();
         this.metrics = zamza.metrics;
         this.mongoWrapper = zamza.mongoWrapper;
+        this.hooksEnabled = zamza.config.hooks ? !!zamza.config.hooks.enabled : false;
     }
 
     private hash(value: string): number {
@@ -55,11 +63,24 @@ export default class MessageHandler {
             return false;
         }
 
+        // check if this message is from one of our zamza internal topics
+        // always make sure to await these calls, so that we make sure we never
+        // consume faster than we can actually call hooks or reproduce messages
+        // this additionally prevents loops where we consume our own replays
+        if (fromStream) {
+
+            if (message.topic === RETRY_TOPIC) {
+                return await this.hookDealer.handleRetryMessage(message);
+            }
+
+            if (message.topic === REPLAY_TOPIC) {
+                return await this.hookDealer.handleReplayMessage(message);
+            }
+        }
+
         if (!this.mongoWrapper.isConnected()) {
             throw new Error("MongoDB connection is not established.");
         }
-
-        this.metrics.inc(`processed_messages_topic_${MessageHandler.cleanTopicNameForMetrics(message.topic)}`);
 
         const startTime = Date.now();
         let keyAsBuffer: Buffer | null = null;
@@ -137,6 +158,11 @@ export default class MessageHandler {
 
         const duration = Date.now() - startTime;
         this.metrics.set("processed_message_ms", duration);
+
+        if (this.hooksEnabled && fromStream) {
+            // always ensure to await this
+            await this.hookDealer.handleMessage(message);
+        }
 
         this.metrics.inc("processed_messages_success");
         return true;

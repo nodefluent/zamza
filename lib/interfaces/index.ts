@@ -3,5 +3,7 @@ export * from "./MongoConfig";
 export * from "./DiscoveryConfig";
 export * from "./HttpConfig";
 export * from "./KafkaConfig";
+export * from "./TopicConfig";
 export * from "./KeyIndex";
 export * from "./TopicMetadata";
+export * from "./Hook";

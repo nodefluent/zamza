@@ -3,17 +3,21 @@ import * as Debug from "debug";
 const debug = Debug("zamza:mongopoller");
 
 import MongoWrapper from "./MongoWrapper";
-import { TopicConfigModel } from "./models/TopicConfigModel";
-import { TopicConfig } from "../interfaces/TopicConfig";
+import { TopicConfigModel, HookModel } from "./models";
+import { TopicConfig, Hook } from "../interfaces";
 import Discovery from "../kafka/Discovery";
 import { Metrics } from "../Metrics";
 
 export default class MongoPoller extends EventEmitter {
 
-    public collected: { topicConfigs: TopicConfig[] };
+    public collected: {
+        topicConfigs: TopicConfig[],
+        hooks: Hook[],
+    };
 
     private readonly metrics: Metrics;
     private readonly topicConfigModel: TopicConfigModel;
+    private readonly hookModel: HookModel;
     private intv: any;
     private topicConfigHash: number;
 
@@ -21,11 +25,13 @@ export default class MongoPoller extends EventEmitter {
         super();
 
         this.topicConfigModel = mongoWrapper.getTopicConfig();
+        this.hookModel = mongoWrapper.getHook();
         this.metrics = metrics;
         this.intv = null;
         this.topicConfigHash = 0;
         this.collected = {
             topicConfigs: [],
+            hooks: [],
         };
     }
 
@@ -75,8 +81,13 @@ export default class MongoPoller extends EventEmitter {
             this.emit("topic-config-changed", topics);
         }
 
+        const hooks = await this.hookModel.list();
+        this.metrics.set("configured_hooks", hooks.length);
+        this.emit("hooks-changed", hooks); // currently we just always emit
+
         this.collected = Object.assign(this.collected, {
             topicConfigs,
+            hooks,
         });
 
         this.metrics.inc("job_poll_ran_success");

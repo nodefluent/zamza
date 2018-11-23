@@ -1,8 +1,16 @@
 import * as Debug from "debug";
 import { Metrics } from "../Metrics";
+import { Subscription } from "../interfaces";
 const debug = Debug("zamza:access");
 
 const WILDCARD = "*";
+
+const PERMISSIONS = {
+    DELETE: "__delete",
+    PRODUCE: "__produce",
+    HOOK: "__hook",
+    TOPIC: "__topic",
+};
 
 export default class AccessControll {
 
@@ -75,16 +83,6 @@ export default class AccessControll {
         }
 
         return anonymisedToken;
-    }
-
-    public topicAccessAllowedForRequest(req: any, topic: string) {
-        const providedToken: string = req.headers ? req.headers.authorization : null;
-        return this.topicAccessAllowedForToken(providedToken, topic);
-    }
-
-    public wildcardAccessAllowedForRequest(req: any) {
-        const providedToken: string = req.headers ? req.headers.authorization : null;
-        return this.wildcardAccessAllowedForToken(providedToken);
     }
 
     private topicAccessAllowedForToken(token: string | null, topic: string): boolean {
@@ -160,5 +158,97 @@ export default class AccessControll {
         debug("Topic access not allowed for token", "token", "reason: no wildcard.");
         this.metrics.inc("access_bad");
         return false;
+    }
+
+    private permissionTypeAccessAllowedForToken(token: string | null, permissionType: string): boolean {
+
+        if (this.accessConfig === WILDCARD) {
+            this.metrics.inc("access_good");
+            return true;
+        }
+
+        if (!token) {
+            debug(permissionType, "access not allowed for token", "token", "reason: no token.");
+            this.metrics.inc("access_bad");
+            return false;
+        }
+
+        const configuration = this.accessConfig[token];
+        if (!configuration) {
+            debug(permissionType, "access not allowed for token", "token", "reason: no configuration.");
+            this.metrics.inc("access_bad");
+            return false;
+        }
+
+        if (configuration === WILDCARD || configuration === permissionType) {
+            this.metrics.inc("access_good");
+            return true;
+        }
+
+        if (Array.isArray(configuration) && configuration.indexOf(WILDCARD) !== -1) {
+            this.metrics.inc("access_good");
+            return true;
+        }
+
+        if (Array.isArray(configuration) && configuration.indexOf(permissionType) !== -1) {
+            this.metrics.inc("access_good");
+            return true;
+        }
+
+        debug(permissionType, "access not allowed for token", "token", "reason: no wildcard, no permission.");
+        this.metrics.inc("access_bad");
+        return false;
+    }
+
+    public topicAccessAllowedForRequest(req: any, topic: string) {
+        const providedToken: string = req.headers ? req.headers.authorization : null;
+        return this.topicAccessAllowedForToken(providedToken, topic);
+    }
+
+    public wildcardAccessAllowedForRequest(req: any) {
+        const providedToken: string = req.headers ? req.headers.authorization : null;
+        return this.wildcardAccessAllowedForToken(providedToken);
+    }
+
+    public topicConfigAccessAllowedForRequest(req: any) {
+        const providedToken: string = req.headers ? req.headers.authorization : null;
+        return this.permissionTypeAccessAllowedForToken(providedToken, PERMISSIONS.TOPIC);
+    }
+
+    public produceAccessAllowedForRequest(req: any) {
+        const providedToken: string = req.headers ? req.headers.authorization : null;
+        return this.permissionTypeAccessAllowedForToken(providedToken, PERMISSIONS.PRODUCE);
+    }
+
+    public deleteAccessAllowedForRequest(req: any) {
+        const providedToken: string = req.headers ? req.headers.authorization : null;
+        return this.permissionTypeAccessAllowedForToken(providedToken, PERMISSIONS.DELETE);
+    }
+
+    public hookAccessAllowedForRequest(req: any) {
+        const providedToken: string = req.headers ? req.headers.authorization : null;
+        return this.permissionTypeAccessAllowedForToken(providedToken, PERMISSIONS.HOOK);
+    }
+
+    public subscriptionsAllowedForRequest(req: any, subscriptions: Subscription[]) {
+
+        const providedToken: string = req.headers ? req.headers.authorization : null;
+
+        if (!Array.isArray(subscriptions)) {
+            throw new Error("Subscriptions must be an array.");
+        }
+
+        for (const subscription of subscriptions) {
+
+            if (!subscription || !subscription.topic) {
+                throw new Error("Subscription missing topic field.");
+            }
+
+            if (!this.topicAccessAllowedForToken(providedToken, subscription.topic)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

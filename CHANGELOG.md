@@ -1,5 +1,17 @@
 # zamza CHANGELOG
 
+## 2018-11-23, Version 0.24.0
+
+* put earliest and latest in correct order (was the other way around)
+* added hookmodel to manage http subscriptions
+* added /api/config/hook endpoints
+* providing better kafka example config
+* fine grained access rights for produce, delete, topicConfig and hook operations
+* removed per topic metrics
+* added HookDealer to bring subscription processing to message handler
+* added internal topics to handle retries and replays for hooks
+
+
 ## 2018-11-22, Version 0.23.0
 
 * **BREAKING** changed key index schema from single collection to collection per topic

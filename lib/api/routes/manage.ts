@@ -31,6 +31,13 @@ const routeManage = (zamza: Zamza) => {
             return;
         }
 
+        if (!res.locals.access.produceAccessAllowedForRequest(req)) {
+            res.status(403).json({
+                error: "Access not allowed, for produce",
+            });
+            return;
+        }
+
         if (!res.locals.access.topicAccessAllowedForRequest(req, req.body.topic)) {
             res.status(403).json({
                 error: "Access not allowed, for this topic",
@@ -73,6 +80,13 @@ const routeManage = (zamza: Zamza) => {
             fromStream = false, // also allow deletion of streamed messages
             produceTombstone = false, // also produce tombstone for key on topic (throw error if topic not compacted)
         } = req.query;
+
+        if (!res.locals.access.deleteAccessAllowedForRequest(req)) {
+            res.status(403).json({
+                error: "Access not allowed, for deletes",
+            });
+            return;
+        }
 
         if (!res.locals.access.topicAccessAllowedForRequest(req.params.topic)) {
             res.status(403).json({

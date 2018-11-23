@@ -70,6 +70,45 @@ Checkout the APIDOC at `http://localhost:1912/doc`.
 
 You can monitor zamza via Prometheus at `http://localhost:1912/metrics`.
 
+## Access Management
+
+Zamza allows _fine grained_ access management with a similiar span of what Kafka ACLs allow you to do on a per topic basis.
+You define tokens as keys in the configs http access object and set the topic names or special rights as string members of the key's array value. A wildcard `*` grants all rights.
+
+e.g.
+
+```javascript
+const config = {
+  http: {
+    access: {
+      "my-crazy-secure-token-string": [ "__delete", "__produce", "__hook", "__topic", "on-some-topic" ],
+      "token-for-some-topics": [ "customers", "baskets", "orders" ],
+      "token-for-admin": [ "*" ]
+    }
+  }
+};
+```
+
+When making calls to zamza's HTTP API the token is provided in the `authorization` header.
+
+* `*` Allows every operation
+* `__topic` Is allowed to configure topics (only for provided topics)
+* `__hook` Is allowed to create hooks (only for provided topics)
+* `__delete` Allows deletes on topics (if no wildcard is present, only on the provided topics)
+* `__produce` Allows producing messages to topic (that are provided additionally)
+
+Be aware that the default configuration is a wildcard for everything. (Meaning no token is required).
+Never expose Zamza's HTTP interface publicly.
+
+## Using Hooks
+
+First of all you will have to enable hooks in the config `config.hooks.enabled`.
+Afterwards please make sure to create the following topics with key compaction or deletion (to your liking)
+so that zamza can automatically deal with retrys and replays: `__zamza_retry_topic, __zamza_replay_topic`.
+(Please do no never produce to these topics manually, they should be kept exclusive for zamza).
+
+TODO
+
 ## Config via Environment Variables
 
 It is possible to set a few config parameters (most in role of secrets) via environment variables.
@@ -86,13 +125,6 @@ They will always overwrite the passed configuration file.
 * `ACL_DEFINITIONS="mytoken=topic1,topic2;othertoken=topic3" zamza -l "./config.json"` -> turns into: `config.http.access.mytoken = [ "topic1", "topic2" ];`
 
 The kafka env values will set consumer and producer at the same time.
-
-## Roadmap
-
-* apidoc
-* consume hooks v1
-* more metadata information (Zookeeper <- brokers and configs)
-* consume hooks v2
 
 ## Maintainer
 

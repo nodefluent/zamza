@@ -14,9 +14,13 @@ const routeTopicConfig = (zamza: Zamza) => {
             parent: "/api",
             self: "/api/config",
             children: [
+
                 "/api/config/topic",
                 "/api/config/topic/many",
                 "/api/config/topic/:topic",
+
+                "/api/config/hook",
+                "/api/config/hook/name/:name",
             ],
         });
     });
@@ -36,7 +40,7 @@ const routeTopicConfig = (zamza: Zamza) => {
             const topicConfig = await topicConfigModel.get(req.params.topic);
 
             if (topicConfig) {
-                res.status(200).json(await topicConfigModel.list());
+                res.status(200).json(topicConfig);
                 return;
             }
 
@@ -53,7 +57,7 @@ const routeTopicConfig = (zamza: Zamza) => {
 
     router.post("/topic", async (req, res) => {
 
-        if (!res.locals.access.wildcardAccessAllowedForRequest(req)) {
+        if (!res.locals.access.topicConfigAccessAllowedForRequest(req)) {
             res.status(403).json({
                 error: "Access not allowed",
             });
@@ -88,7 +92,7 @@ const routeTopicConfig = (zamza: Zamza) => {
 
     router.put("/topic", async (req, res) => {
 
-        if (!res.locals.access.wildcardAccessAllowedForRequest(req)) {
+        if (!res.locals.access.topicConfigAccessAllowedForRequest(req)) {
             res.status(403).json({
                 error: "Access not allowed",
             });
@@ -107,7 +111,7 @@ const routeTopicConfig = (zamza: Zamza) => {
 
     router.put("/topic/many", async (req, res) => {
 
-        if (!res.locals.access.wildcardAccessAllowedForRequest(req)) {
+        if (!res.locals.access.topicConfigAccessAllowedForRequest(req)) {
             res.status(403).json({
                 error: "Access not allowed",
             });
@@ -138,7 +142,7 @@ const routeTopicConfig = (zamza: Zamza) => {
 
     router.delete("/topic/:topic", async (req, res) => {
 
-        if (!res.locals.access.wildcardAccessAllowedForRequest(req)) {
+        if (!res.locals.access.topicConfigAccessAllowedForRequest(req)) {
             res.status(403).json({
                 error: "Access not allowed",
             });

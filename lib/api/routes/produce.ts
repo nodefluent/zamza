@@ -25,6 +25,13 @@ const routeProduce = (zamza: Zamza) => {
             return;
         }
 
+        if (!res.locals.access.produceAccessAllowedForRequest(req)) {
+            res.status(403).json({
+                error: "Access not allowed, no produce rights",
+            });
+            return;
+        }
+
         if (!res.locals.access.topicAccessAllowedForRequest(req, req.body.topic)) {
             res.status(403).json({
                 error: "Access not allowed, for this topic",

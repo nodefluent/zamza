@@ -12,14 +12,15 @@ import { Metrics } from "./Metrics";
 import MetadataFetcher from "./db/MetadataFetcher";
 
 import { ZamzaConfig } from "./interfaces";
+import HookDealer from "./HookDealer";
 
 const GRACE_EXIT_MS = 1250;
 
 export default class Zamza {
 
-    private readonly config: ZamzaConfig;
     private readonly httpServer: HttpServer;
 
+    public readonly config: ZamzaConfig;
     public readonly consumer: Consumer;
     public readonly producer: Producer;
     public readonly messageHandler: MessageHandler;
@@ -28,6 +29,7 @@ export default class Zamza {
     public readonly discovery: Discovery;
     public readonly metrics: Metrics;
     public readonly metadataFetcher: MetadataFetcher;
+    public readonly hookDealer: HookDealer;
 
     private alive: boolean = true;
     private ready: boolean = false;
@@ -46,6 +48,7 @@ export default class Zamza {
         this.producer = new Producer(this.config.kafka, this);
         this.httpServer = new HttpServer(this.config.http, this);
         this.consumer = new Consumer(this.config.kafka, this);
+        this.hookDealer = new HookDealer(this);
         this.messageHandler = new MessageHandler(this);
         this.metadataFetcher = new MetadataFetcher(this.mongoWrapper, this.metrics);
     }
@@ -125,6 +128,10 @@ export default class Zamza {
         this.mongoPoller.on("topic-config-changed", (topics) => {
             debug("Topic Configuration changed, adjusting subscription of consumer accordingly..", topics.length);
             this.consumer.adjustSubscriptions(topics);
+        });
+
+        this.mongoPoller.on("hooks-changed", (hooks) => {
+            this.hookDealer.processHookUpdate(hooks);
         });
 
         await this.discovery.start(this.consumer.getKafkaClient());

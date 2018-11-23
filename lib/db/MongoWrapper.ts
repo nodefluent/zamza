@@ -6,7 +6,7 @@ const Schema = mongoose.Schema;
 
 import { MongoConfig } from "../interfaces";
 import * as Models from "./models";
-import { KeyIndexModel, TopicConfigModel, TopicMetadataModel, LockModel } from "./models";
+import { KeyIndexModel, TopicConfigModel, TopicMetadataModel, LockModel, HookModel } from "./models";
 import Zamza from "../Zamza";
 
 export default class MongoWrapper {
@@ -116,6 +116,10 @@ export default class MongoWrapper {
 
     public getLock(): LockModel {
         return this.models.lock;
+    }
+
+    public getHook(): HookModel {
+        return this.models.hook;
     }
 
     public close() {

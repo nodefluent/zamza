@@ -370,6 +370,10 @@ export class KeyIndexModel {
     public async paginateThroughTopic(topic: string, skipToIndex: string | null,
                                       limit: number = 50, order: number = -1) {
 
+        // order
+        // 1 = ascending = earliest
+        // -1 = descending = latest
+
         if (limit > 2500) {
             throw new Error(limit + " is a huge limit size, please stay under 2500 per call.");
         }
@@ -414,11 +418,11 @@ export class KeyIndexModel {
     }
 
     public async getRangeFromLatest(topic: string, range: number = 50) {
-        return this.paginateThroughTopic(topic, null, range, 1);
+        return this.paginateThroughTopic(topic, null, range, -1);
     }
 
     public async getRangeFromEarliest(topic: string, range: number = 50) {
-        return this.paginateThroughTopic(topic, null, range, -1);
+        return this.paginateThroughTopic(topic, null, range, 1);
     }
 
     public async insert(topic: string, document: KeyIndex): Promise<KeyIndex> {

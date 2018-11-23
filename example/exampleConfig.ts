@@ -10,17 +10,13 @@ const zamzaConfig = {
                 "api.version.request": true,
                 "socket.keepalive.enable": true,
                 "socket.blocking.max.ms": 100,
-                "enable.auto.commit": false,
                 "heartbeat.interval.ms": 250,
                 "retry.backoff.ms": 250,
-                "fetch.min.bytes": 100,
-                "fetch.message.max.bytes": 2 * 1024 * 1024,
-                "queued.min.messages": 100,
-                "fetch.error.backoff.ms": 100,
-                "queued.max.messages.kbytes": 50,
-                "fetch.wait.max.ms": 1000,
-                "queue.buffering.max.ms": 1000,
-                "batch.num.messages": 10000,
+                // "security.protocol": "sasl_ssl",
+                // "ssl.key.location": "/tmp/kafka-clients-key/service-client.key.pem",
+                // "ssl.certificate.location": "/tmp/kafka-clients-certificate/service-client.cert.pem",
+                // "ssl.ca.location": "/tmp/ca-chain-certificate/ca-chain.cert.pem",
+                // "sasl.mechanisms": "PLAIN"
             },
             tconf: {
                 "request.required.acks": 1,
@@ -29,9 +25,8 @@ const zamzaConfig = {
         consumer: {
             noptions: {
                 "metadata.broker.list": "localhost:9092",
-                "group.id": "zamza-example-group-1",
+                "group.id": "zamza-example-group",
                 "event_cb": false,
-                // "compression.codec": "snappy",
                 "api.version.request": true,
                 "socket.keepalive.enable": true,
                 "socket.blocking.max.ms": 100,
@@ -42,10 +37,15 @@ const zamzaConfig = {
                 "fetch.message.max.bytes": 2 * 1024 * 1024,
                 "queued.min.messages": 100,
                 "fetch.error.backoff.ms": 100,
-                "queued.max.messages.kbytes": 50,
+                "queued.max.messages.kbytes": 500,
                 "fetch.wait.max.ms": 1000,
                 "queue.buffering.max.ms": 1000,
-                "batch.num.messages": 10000,
+                "batch.num.messages": 15000,
+                // "security.protocol": "sasl_ssl",
+                // "ssl.key.location": "/tmp/kafka-clients-key/service-client.key.pem",
+                // "ssl.certificate.location": "/tmp/kafka-clients-certificate/service-client.cert.pem",
+                // "ssl.ca.location": "/tmp/ca-chain-certificate/ca-chain.cert.pem",
+                // "sasl.mechanisms": "PLAIN"
             },
             tconf: {
                 "auto.offset.reset": "earliest",
@@ -78,8 +78,8 @@ const zamzaConfig = {
         port: 1912,
         // access: "*" is default
         access: {
-            token1: ["topic1", "topic2"],
-            token2: ["topic3"],
+            token1: ["topic1", "topic2", "__hook", "__topic"],
+            token2: ["topic3", "__delete", "__produce"],
             token3: "*", // any access, also allows to change topic config
         },
     },

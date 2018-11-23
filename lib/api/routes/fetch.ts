@@ -163,7 +163,7 @@ const routeFetch = (zamza: Zamza) => {
 
         try {
             res.status(200).json(await keyIndexModel.paginateThroughTopic(topic,
-                skipToIndex ? skipToIndex : null, parseInt(limit, undefined), -1));
+                skipToIndex ? skipToIndex : null, parseInt(limit, undefined), 1));
         } catch (error) {
             res.status(500).json({
                 error: "An error occured " + error.message,
@@ -184,7 +184,7 @@ const routeFetch = (zamza: Zamza) => {
 
         try {
             res.status(200).json(await keyIndexModel.paginateThroughTopic(topic,
-                skipToIndex ? skipToIndex : null, parseInt(limit, undefined), 1));
+                skipToIndex ? skipToIndex : null, parseInt(limit, undefined), -1));
         } catch (error) {
             res.status(500).json({
                 error: "An error occured " + error.message,
