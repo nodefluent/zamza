@@ -4,6 +4,7 @@ const debug = Debug("zamza:model:keyindex");
 import * as moment from "moment";
 import * as mongoose from "mongoose";
 import * as Bluebird from "bluebird";
+import * as toJSONSchema from "to-json-schema";
 
 import { KeyIndex, TopicMetadata } from "../../interfaces";
 import Zamza from "../../Zamza";
@@ -423,6 +424,55 @@ export class KeyIndexModel {
 
     public async getRangeFromEarliest(topic: string, range: number = 50) {
         return this.paginateThroughTopic(topic, null, range, 1);
+    }
+
+    public async analyseJSONSchema(topic: string) {
+
+        const earliestMessages = await this.getRangeFromEarliest(topic, 10);
+        const latestMessages = await this.getRangeFromLatest(topic, 10);
+        const parsedAndConsolidatedMessages: any = [];
+
+        const analyseMessage = (message: any) => {
+
+            if (!message.value) {
+                return;
+            }
+
+            try {
+                const value = JSON.parse(message.value.toString("utf8"));
+                if (!value || typeof value !== "object") {
+                    return;
+                }
+
+                delete message.$index;
+                message.key = message.key ? message.key.toString("utf8") : message.key;
+                message.value = value;
+
+                parsedAndConsolidatedMessages.push(message);
+            } catch (error) {
+                throw new Error("Cannot determine JSON schema for topic "
+                    + topic + ", as it does not contain JSON. " + error.message);
+            }
+        };
+
+        earliestMessages.results.forEach(analyseMessage);
+        latestMessages.results.forEach(analyseMessage);
+
+        if (parsedAndConsolidatedMessages.length < 2) {
+            throw new Error("The topic " + topic + " has not enough fetchable messages"
+                + " to create a stable JSON schema. (At least 2 messages with non null value required.)");
+        }
+
+        try {
+            const schema = toJSONSchema(parsedAndConsolidatedMessages);
+            if (!schema) {
+                throw new Error("Empty schema.");
+            }
+
+            return schema;
+        } catch (error) {
+            throw new Error("Failed to create schema for topic " + topic + ", " + error.message);
+        }
     }
 
     public async insert(topic: string, document: KeyIndex): Promise<KeyIndex> {

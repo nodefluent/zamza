@@ -2,6 +2,8 @@ import * as express from "express";
 import * as Promise from "bluebird";
 import Zamza from "../../Zamza";
 
+const ZAMZA_TOPIC_PREFIX = "__zamza";
+
 const routeTopicConfig = (zamza: Zamza) => {
 
     const router = express.Router();
@@ -74,6 +76,13 @@ const routeTopicConfig = (zamza: Zamza) => {
         try {
             const { topic, cleanupPolicy, retentionMs } = req.body;
 
+            if (topic && topic.startsWith(ZAMZA_TOPIC_PREFIX)) {
+                res.status(400).json({
+                    error: "Cannot do that for a zamza internal topic, " + topic,
+                });
+                return;
+            }
+
             const topicConfig = await topicConfigModel.get(topic);
             if (topicConfig) {
                 res.status(400).json({
@@ -101,6 +110,14 @@ const routeTopicConfig = (zamza: Zamza) => {
 
         try {
             const { topic, cleanupPolicy, retentionMs } = req.body;
+
+            if (topic && topic.startsWith(ZAMZA_TOPIC_PREFIX)) {
+                res.status(400).json({
+                    error: "Cannot do that for a zamza internal topic, " + topic,
+                });
+                return;
+            }
+
             res.status(202).json(await topicConfigModel.upsert(topic, cleanupPolicy, retentionMs));
         } catch (error) {
             res.status(500).json({
@@ -128,7 +145,13 @@ const routeTopicConfig = (zamza: Zamza) => {
         try {
 
             await Promise.map(req.body.topics, ((topicConfig: any) => {
+
                 const { topic, cleanupPolicy, retentionMs } = topicConfig;
+
+                if (topic && topic.startsWith(ZAMZA_TOPIC_PREFIX)) {
+                    throw new Error("Cannot do that for a zamza internal topic, " + topic);
+                }
+
                 return topicConfigModel.upsert(topic, cleanupPolicy, retentionMs);
             }), {concurrency: 1});
 

@@ -59,7 +59,9 @@
     "mongoose": "~5.3.13",
     "murmurhash": "~0.0.2",
     "prom-client": "~11.2.0",
+    "request": "^2.88.0",
     "sinek": "~6.23.4",
+    "to-json-schema": "^0.2.0",
     "uuid": "~3.3.2"
   },
   "devDependencies": {
@@ -70,6 +72,7 @@
     "@types/mongoose": "~5.3.1",
     "@types/murmurhash": "~0.0.1",
     "@types/node": "~10.12.9",
+    "@types/request": "^2.48.1",
     "@types/uuid": "~3.4.4",
     "mocha": "~5.2.0",
     "tslint": "~5.11.0",

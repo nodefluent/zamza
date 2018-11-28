@@ -1,11 +1,13 @@
 import * as Debug from "debug";
 const debug = Debug("zamza:hookdealer");
+import * as Bluebird from "bluebird";
 
 import Zamza from "./Zamza";
 import { KafkaMessage } from "sinek";
 import { Metrics } from "./Metrics";
 import MongoPoller from "./db/MongoPoller";
 import { Hook, TopicConfig } from "./interfaces";
+import HookClient from "./HookClient";
 
 const DEFAULT_TIMEOUT = 2500;
 
@@ -17,6 +19,7 @@ export default class HookDealer {
     private initialHooksLoaded: boolean = false;
     private topicSubscriptionMap: any;
     private oldTopicSubscriptionLength: number = 0;
+    private hookClient: HookClient;
 
     constructor(zamza: Zamza) {
         this.metrics = zamza.metrics;
@@ -24,6 +27,7 @@ export default class HookDealer {
             zamza.config.hooks.timeout ? zamza.config.hooks.timeout : DEFAULT_TIMEOUT
             : DEFAULT_TIMEOUT;
         this.mongoPoller = zamza.mongoPoller;
+        this.hookClient = new HookClient(zamza);
     }
 
     private findConfigForTopic(topic: string): TopicConfig | null {
@@ -88,6 +92,7 @@ export default class HookDealer {
 
     private async handleSubscription(mappedHook: any): Promise<void> {
         // TODO: create hook http client use here to make call, handle errors and timeouts -> replay
+
     }
 
     public async handleMessage(message: KafkaMessage): Promise<boolean> {
@@ -137,5 +142,14 @@ export default class HookDealer {
         // TODO: option to run hook and produce only (without storing messages to mongodb)
         this.metrics.inc("hook_processed_replay_messages_success");
         return true;
+    }
+
+    public close() {
+
+        if (this.hookClient) {
+            return this.hookClient.close();
+        }
+
+        return null;
     }
 }

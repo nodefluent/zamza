@@ -1,12 +1,12 @@
 import * as express from "express";
 import Zamza from "../../Zamza";
-import { TopicMetadataModel } from "../../db/models";
 
 const routeInfo = (zamza: Zamza) => {
 
     const router = express.Router();
     const topicConfigModel = zamza.mongoWrapper.getTopicConfig();
     const topicMetadataModel = zamza.mongoWrapper.getTopicMetadata();
+    const keyIndexModel = zamza.mongoWrapper.getKeyIndex();
     const messageHandler = zamza.messageHandler;
     const discovery = zamza.discovery;
     const consumer = zamza.consumer;
@@ -19,13 +19,17 @@ const routeInfo = (zamza: Zamza) => {
             children: [
                 "/api/info/consumer",
                 "/api/info/producer",
+
                 "/api/info/topics/discovered",
                 "/api/info/topics/configured",
                 "/api/info/topics/available",
                 "/api/info/topics",
-                "/topics/describe/:topic",
+                "/api/info/topics/describe/:topic",
+
                 "/api/info/metadata",
                 "/api/info/metadata/:topic",
+
+                "/api/info/schema/:topic/json",
             ],
         });
     });
@@ -58,7 +62,7 @@ const routeInfo = (zamza: Zamza) => {
 
             const topicMetadata = await topicMetadataModel.get(topic);
             if (!topicMetadata) {
-                res.status(202).json({
+                res.status(200).json({
                     info: "Try again soon, topic metadata is still being processed.",
                 });
             } else {
@@ -152,6 +156,30 @@ const routeInfo = (zamza: Zamza) => {
             });
 
             res.status(200).json(availableTopics);
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
+    });
+
+    router.get("/schema/:topic/json", async (req, res) => {
+
+        try {
+
+            const topic = req.params.topic;
+
+            const topicConfig = messageHandler.findConfigForTopic(topic);
+            if (!topicConfig) {
+                res.status(400).json({
+                    error: "Topic metadata (schema) can only be provided for configured topics." +
+                        " Please wait a few seconds after configuring a topic.",
+                });
+                return;
+            }
+
+            const schema = await keyIndexModel.analyseJSONSchema(topic);
+            res.status(200).json({ topic, schema });
         } catch (error) {
             res.status(500).json({
                 error: "An error occured " + error.message,

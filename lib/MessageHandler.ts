@@ -24,6 +24,7 @@ export default class MessageHandler {
     private readonly metrics: Metrics;
     private readonly mongoWrapper: MongoWrapper;
     private readonly hooksEnabled: boolean;
+    private readonly hooksOnly: boolean;
 
     constructor(zamza: Zamza) {
         this.mongoPoller = zamza.mongoPoller;
@@ -32,6 +33,19 @@ export default class MessageHandler {
         this.metrics = zamza.metrics;
         this.mongoWrapper = zamza.mongoWrapper;
         this.hooksEnabled = zamza.config.hooks ? !!zamza.config.hooks.enabled : false;
+        this.hooksOnly = zamza.config.hooks ? !!zamza.config.hooks.only : false;
+
+        if (this.hooksEnabled) {
+            debug("NOTE: Hooks are enabled.");
+        }
+
+        if (this.hooksOnly) {
+            debug("NOTE: Hooks-Only mode active, will not persist messages.");
+        }
+
+        if (this.hooksOnly && !this.hooksEnabled) {
+            throw new Error("Having Hooks-Only mode active while setting hooks enabled to false, makes no sense.");
+        }
     }
 
     private hash(value: string): number {
@@ -119,6 +133,13 @@ export default class MessageHandler {
             this.metrics.inc("processed_messages_failed_no_config");
             debug("Cannot process message, because no config was found for topic", message.topic);
             return false;
+        }
+
+        // make sure to run config check first, to ensure the topic can be processed
+        // configuation determines that we do not persist messages in MongoDB and only process them as potential hooks
+        if (this.hooksOnly) {
+            await this.hookDealer.handleMessage(message);
+            return true;
         }
 
         // detect compact or deletion policy and adjust storage process accordingly

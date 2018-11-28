@@ -14,5 +14,6 @@ export interface ZamzaConfig {
     hooks?: {
         enabled?: boolean;
         timeout?: number;
+        only?: boolean;
     };
 }

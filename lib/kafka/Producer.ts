@@ -25,7 +25,7 @@ export default class Producer {
                 this.producedLately = 0;
             }
 
-        }, 15000);
+        }, 45000);
     }
 
     public async start() {

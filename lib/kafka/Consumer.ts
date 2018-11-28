@@ -25,7 +25,7 @@ export default class Consumer {
                 this.consumedLately = 0;
             }
 
-        }, 15000);
+        }, 45000);
     }
 
     public async start() {

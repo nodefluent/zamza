@@ -2,7 +2,7 @@
 
 ## 2018-11-23, Version 0.24.0
 
-* put earliest and latest in correct order (was the other way around)
+* **BREAKING** put earliest and latest in correct order (was the other way around)
 * added hookmodel to manage http subscriptions
 * added /api/config/hook endpoints
 * providing better kafka example config
@@ -10,7 +10,11 @@
 * removed per topic metrics
 * added HookDealer to bring subscription processing to message handler
 * added internal topics to handle retries and replays for hooks
-
+* added new endpoint to fetch analysed schemas for json message values /api/info/schema/:topic/json
+* increasesd lately log intervals for consumer and producer
+* added HookClient to process http requests of hooks
+* added hooks only mode
+* made some precautions to protect zamza internal topics
 
 ## 2018-11-22, Version 0.23.0
 

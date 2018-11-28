@@ -40,6 +40,11 @@ export default class Zamza {
             throw new Error("Config must be an object: {kafka,discovery,mongo,http,jobs}");
         }
 
+        if (!config.hooks) {
+            debug("No hook configuration found.");
+            config.hooks = {};
+        }
+
         this.config = config;
         this.metrics = new Metrics("zamza");
         this.discovery = new Discovery(this.config.discovery, this.metrics);
@@ -157,6 +162,7 @@ export default class Zamza {
         await this.producer.close();
         this.mongoWrapper.close();
         this.metrics.close();
+        this.hookDealer.close();
     }
 
     public setAliveState(state: boolean): void {

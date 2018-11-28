@@ -12,6 +12,8 @@ const PERMISSIONS = {
     TOPIC: "__topic",
 };
 
+const ZAMZA_TOPIC_PREFIX = "__zamza";
+
 export default class AccessControll {
 
     private readonly accessConfig: any;
@@ -86,6 +88,11 @@ export default class AccessControll {
     }
 
     private topicAccessAllowedForToken(token: string | null, topic: string): boolean {
+
+        if (topic && topic.startsWith(ZAMZA_TOPIC_PREFIX)) {
+            debug("Cannot allow access to topic that begins with zamza's internal prefix", topic);
+            return false;
+        }
 
         if (this.accessConfig === WILDCARD) {
             this.metrics.inc("access_good");

@@ -51,6 +51,11 @@ export class TopicMetadataModel {
 
     public get(topic: string): Promise<TopicMetadata> {
         return this.model.findOne({ topic }).lean().exec().then((topicMetadata: any) => {
+
+            if (!topicMetadata) {
+                return topicMetadata;
+            }
+
             delete topicMetadata._id;
             delete topicMetadata.__v;
             return topicMetadata as TopicMetadata;
