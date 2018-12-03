@@ -1,6 +1,6 @@
 # zamza CHANGELOG
 
-## 2018-11-23, Version 0.24.0
+## 2018-12-04, Version 0.24.0
 
 * **BREAKING** put earliest and latest in correct order (was the other way around)
 * added hookmodel to manage http subscriptions
@@ -18,6 +18,8 @@
 * different additional consumer and producer types to handle hook replays and retries
 * handling of hooks in hookdealer
 * handling of retries in hookdealer
+* consumer and producer info endpoints for additional clients
+* new endpoints /api/config/replay to use ReplayHandler (single instance based)
 
 ## 2018-11-22, Version 0.23.0
 

@@ -10,6 +10,7 @@ const PERMISSIONS = {
     PRODUCE: "__produce",
     HOOK: "__hook",
     TOPIC: "__topic",
+    REPLAY: "__replay",
 };
 
 const ZAMZA_TOPIC_PREFIX = "__zamza";
@@ -257,5 +258,10 @@ export default class AccessControll {
         }
 
         return true;
+    }
+
+    public replayAccessAllowedForRequest(req: any) {
+        const providedToken: string = req.headers ? req.headers.authorization : null;
+        return this.permissionTypeAccessAllowedForToken(providedToken, PERMISSIONS.REPLAY);
     }
 }

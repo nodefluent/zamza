@@ -31,7 +31,7 @@ export default class MessageHandler {
     private readonly metrics: Metrics;
     private readonly mongoWrapper: MongoWrapper;
     private readonly hooksEnabled: boolean;
-    private readonly hooksOnly: boolean;
+    public readonly hooksOnly: boolean;
 
     constructor(zamza: Zamza) {
         this.mongoPoller = zamza.mongoPoller;

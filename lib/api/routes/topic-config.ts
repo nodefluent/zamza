@@ -23,6 +23,8 @@ const routeTopicConfig = (zamza: Zamza) => {
 
                 "/api/config/hook",
                 "/api/config/hook/name/:name",
+
+                "/api/config/replay",
             ],
         });
     });

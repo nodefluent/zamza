@@ -18,6 +18,7 @@ import RetryProducer from "./kafka/RetryProducer";
 
 import { ZamzaConfig, KafkaConfig } from "./interfaces";
 import HookDealer from "./HookDealer";
+import { ReplayHandler } from "./ReplayHandler";
 
 const GRACE_EXIT_MS = 1250;
 
@@ -39,6 +40,7 @@ export default class Zamza {
     public readonly metrics: Metrics;
     public readonly metadataFetcher: MetadataFetcher;
     public readonly hookDealer: HookDealer;
+    public readonly replayHandler: ReplayHandler;
 
     private alive: boolean = true;
     private ready: boolean = false;
@@ -81,16 +83,9 @@ export default class Zamza {
         }), this);
 
         this.hookDealer = new HookDealer(this);
+        this.replayHandler = new ReplayHandler(this);
         this.messageHandler = new MessageHandler(this);
         this.metadataFetcher = new MetadataFetcher(this.mongoWrapper, this.metrics);
-    }
-
-    private cloneKafkaConsumerConfig(groupId: string, config: KafkaConfig): KafkaConsumerConfig {
-        const cloneConfig: KafkaConsumerConfig = JSON.parse(JSON.stringify(config.consumer));
-        cloneConfig.noptions = Object.assign(cloneConfig.noptions, {
-            "group.id": groupId,
-        });
-        return cloneConfig;
     }
 
     private cloneKafkaProducerConfig(clientId: string, config: KafkaConfig): KafkaProducerConfig {
@@ -175,6 +170,12 @@ export default class Zamza {
         });
 
         this.mongoPoller.on("topic-config-changed", (topics) => {
+
+            // no need to adjust subscriptions
+            if (this.messageHandler.hooksOnly) {
+                return;
+            }
+
             debug("Topic Configuration changed, adjusting subscription of consumer accordingly..", topics.length);
             this.consumer.adjustSubscriptions(topics);
         });
@@ -201,6 +202,7 @@ export default class Zamza {
         this.setAliveState(false);
         this.setReadyState(false);
 
+        await this.replayHandler.close();
         this.mongoPoller.close();
         this.metadataFetcher.close();
         this.discovery.close();
@@ -214,6 +216,14 @@ export default class Zamza {
         this.mongoWrapper.close();
         this.metrics.close();
         this.hookDealer.close();
+    }
+
+    public cloneKafkaConsumerConfig(groupId: string, config: KafkaConfig): KafkaConsumerConfig {
+        const cloneConfig: KafkaConsumerConfig = JSON.parse(JSON.stringify(config.consumer));
+        cloneConfig.noptions = Object.assign(cloneConfig.noptions, {
+            "group.id": groupId,
+        });
+        return cloneConfig;
     }
 
     public static isProduction(): boolean {

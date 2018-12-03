@@ -9,3 +9,4 @@ export * from "./TopicMetadata";
 export * from "./Hook";
 export * from "./RetryMessagePayload";
 export * from "./ReplayMessagePayload";
+export * from "./Replay";

@@ -6,8 +6,10 @@ const Schema = mongoose.Schema;
 
 import { MongoConfig } from "../interfaces";
 import * as Models from "./models";
-import { KeyIndexModel, TopicConfigModel, TopicMetadataModel, LockModel, HookModel } from "./models";
 import Zamza from "../Zamza";
+import { KeyIndexModel, TopicConfigModel,
+        TopicMetadataModel, LockModel,
+        HookModel, ReplayModel } from "./models";
 
 export default class MongoWrapper {
 
@@ -120,6 +122,10 @@ export default class MongoWrapper {
 
     public getHook(): HookModel {
         return this.models.hook;
+    }
+
+    public getReplay(): ReplayModel {
+        return this.models.replay;
     }
 
     public close() {

@@ -289,8 +289,7 @@ export default class HookDealer {
             return false;
         }
 
-        // TODO: handle replay enabled, how to trigger replay in the first place?
-        // TODO: resource to ensure that only one replay is active per given time
+        // TODO: handle replay enabled on subscription with concurrency
 
         this.metrics.inc("hook_processed_replay_messages_success");
         return true;

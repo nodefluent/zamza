@@ -96,6 +96,7 @@ When making calls to zamza's HTTP API the token is provided in the `authorizatio
 * `__hook` Is allowed to create hooks (only for provided topics)
 * `__delete` Allows deletes on topics (if no wildcard is present, only on the provided topics)
 * `__produce` Allows producing messages to topic (that are provided additionally)
+* `__replay` Is allowed to configure topic replays
 
 Be aware that the default configuration is a wildcard for everything. (Meaning no token is required).
 Never expose Zamza's HTTP interface publicly.
@@ -106,6 +107,13 @@ First of all you will have to enable hooks in the config `config.hooks.enabled`.
 Afterwards please make sure to create the following topics with key compaction or deletion (to your liking)
 so that zamza can automatically deal with retrys and replays: `__zamza_retry_topic, __zamza_replay_topic`.
 (Please do no never produce to these topics manually, they should be kept exclusive for zamza).
+
+TODO
+
+## Doing topic replays
+
+First of all ensure that you have configured a hook subscription that has no set `ignoreReplay` to `true`.
+Otherwise you wont receive messages from a replay.
 
 TODO
 

@@ -11,6 +11,11 @@ const routeInfo = (zamza: Zamza) => {
     const discovery = zamza.discovery;
     const consumer = zamza.consumer;
     const producer = zamza.producer;
+    const replayConsumer = zamza.replayConsumer;
+    const replayProducer = zamza.replayProducer;
+    const retryConsumer = zamza.retryConsumer;
+    const retryProducer = zamza.retryProducer;
+    const replayHandler = zamza.replayHandler;
 
     router.get("/", (req, res) => {
         res.json({
@@ -19,6 +24,14 @@ const routeInfo = (zamza: Zamza) => {
             children: [
                 "/api/info/consumer",
                 "/api/info/producer",
+
+                "/api/info/consumer-replay",
+                "/api/info/producer-replay",
+
+                "/api/info/consumer-retry",
+                "/api/info/producer-retry",
+
+                "/api/info/consumer-mirror",
 
                 "/api/info/topics/discovered",
                 "/api/info/topics/configured",
@@ -90,6 +103,69 @@ const routeInfo = (zamza: Zamza) => {
 
         try {
             res.status(200).json(await producer.getKafkaStats());
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
+    });
+
+    router.get("/consumer-replay", async (req, res) => {
+
+        try {
+            res.status(200).json(await replayConsumer.getKafkaStats());
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
+    });
+
+    router.get("/producer-replay", async (req, res) => {
+
+        try {
+            res.status(200).json(await replayProducer.getKafkaStats());
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
+    });
+
+    router.get("/consumer-retry", async (req, res) => {
+
+        try {
+            res.status(200).json(await retryConsumer.getKafkaStats());
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
+    });
+
+    router.get("/consumer-mirror", async (req, res) => {
+
+        try {
+            const stats = replayHandler.mirrorConsumer ? replayHandler.mirrorConsumer.getKafkaStats() : null;
+
+            if (!stats) {
+                res.status(404).json({
+                    error: "No replay consumer running on this instance",
+                });
+            } else {
+                res.status(200).json(stats);
+            }
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
+    });
+
+    router.get("/producer-retry", async (req, res) => {
+
+        try {
+            res.status(200).json(await retryProducer.getKafkaStats());
         } catch (error) {
             res.status(500).json({
                 error: "An error occured " + error.message,
