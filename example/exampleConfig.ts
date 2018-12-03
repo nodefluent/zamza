@@ -6,6 +6,7 @@ const zamzaConfig = {
             noptions: {
                 "metadata.broker.list": "localhost:9092",
                 "event_cb": false,
+                "client.id": "zamza-example-client",
                 // "compression.codec": "snappy",
                 "api.version.request": true,
                 "socket.keepalive.enable": true,
@@ -86,6 +87,13 @@ const zamzaConfig = {
     jobs: {
         topicConfigPollingMs: 32000,
         metadataFetcherMs: 23 * 62000,
+    },
+    hooks: {
+        enabled: true,
+        timeout: 1500,
+        only: false,
+        retries: 3,
+        retryTimeoutMs: 1000,
     },
 };
 

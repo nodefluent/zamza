@@ -15,5 +15,7 @@ export interface ZamzaConfig {
         enabled?: boolean;
         timeout?: number;
         only?: boolean;
+        retries?: number;
+        retryTimeoutMs?: number;
     };
 }

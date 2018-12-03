@@ -1,17 +1,22 @@
 import * as Debug from "debug";
 const debug = Debug("zamza:zamza");
+import { KafkaConsumerConfig, KafkaProducerConfig } from "sinek";
 
 import MongoWrapper from "./db/MongoWrapper";
 import MongoPoller from "./db/MongoPoller";
 import Discovery from "./kafka/Discovery";
 import HttpServer from "./api/HttpServer";
-import MessageHandler from "./MessageHandler";
+import MessageHandler, { INTERNAL_TOPICS } from "./MessageHandler";
 import Consumer from "./kafka/Consumer";
 import Producer from "./kafka/Producer";
 import { Metrics } from "./Metrics";
 import MetadataFetcher from "./db/MetadataFetcher";
+import ReplayConsumer from "./kafka/ReplayConsumer";
+import RetryConsumer from "./kafka/RetryConsumer";
+import ReplayProducer from "./kafka/ReplayProducer";
+import RetryProducer from "./kafka/RetryProducer";
 
-import { ZamzaConfig } from "./interfaces";
+import { ZamzaConfig, KafkaConfig } from "./interfaces";
 import HookDealer from "./HookDealer";
 
 const GRACE_EXIT_MS = 1250;
@@ -22,6 +27,10 @@ export default class Zamza {
 
     public readonly config: ZamzaConfig;
     public readonly consumer: Consumer;
+    public readonly replayConsumer: ReplayConsumer;
+    public readonly retryConsumer: RetryConsumer;
+    public readonly replayProducer: ReplayProducer;
+    public readonly retryProducer: RetryProducer;
     public readonly producer: Producer;
     public readonly messageHandler: MessageHandler;
     public readonly mongoWrapper: MongoWrapper;
@@ -52,14 +61,44 @@ export default class Zamza {
         this.mongoPoller = new MongoPoller(this.mongoWrapper, this.metrics);
         this.producer = new Producer(this.config.kafka, this);
         this.httpServer = new HttpServer(this.config.http, this);
+
         this.consumer = new Consumer(this.config.kafka, this);
+
+        this.replayConsumer = new ReplayConsumer(Object.assign(this.config.kafka, {
+            consumer: this.cloneKafkaConsumerConfig("zamza-internal-replay-consumer-group-1", this.config.kafka),
+        }), this);
+
+        this.retryConsumer = new RetryConsumer(Object.assign(this.config.kafka, {
+            consumer: this.cloneKafkaConsumerConfig("zamza-internal-retry-consumer-group-1", this.config.kafka),
+        }), this);
+
+        this.replayProducer = new ReplayProducer(Object.assign(this.config.kafka, {
+            producer: this.cloneKafkaProducerConfig("zamza-internal-replay-producer-1", this.config.kafka),
+        }), this);
+
+        this.retryProducer = new RetryProducer(Object.assign(this.config.kafka, {
+            producer: this.cloneKafkaProducerConfig("zamza-internal-retry-producer-1", this.config.kafka),
+        }), this);
+
         this.hookDealer = new HookDealer(this);
         this.messageHandler = new MessageHandler(this);
         this.metadataFetcher = new MetadataFetcher(this.mongoWrapper, this.metrics);
     }
 
-    public static isProduction(): boolean {
-        return process.env.NODE_ENV === "production";
+    private cloneKafkaConsumerConfig(groupId: string, config: KafkaConfig): KafkaConsumerConfig {
+        const cloneConfig: KafkaConsumerConfig = JSON.parse(JSON.stringify(config.consumer));
+        cloneConfig.noptions = Object.assign(cloneConfig.noptions, {
+            "group.id": groupId,
+        });
+        return cloneConfig;
+    }
+
+    private cloneKafkaProducerConfig(clientId: string, config: KafkaConfig): KafkaProducerConfig {
+        const cloneConfig: KafkaProducerConfig = JSON.parse(JSON.stringify(config.consumer));
+        cloneConfig.noptions = Object.assign(cloneConfig.noptions, {
+            "client.id": clientId,
+        });
+        return cloneConfig;
     }
 
     private shutdownOnErrorIfNotProduction() {
@@ -126,6 +165,11 @@ export default class Zamza {
         await this.producer.start();
         await this.consumer.start();
 
+        await this.replayProducer.start();
+        await this.retryProducer.start();
+        await this.replayConsumer.start();
+        await this.retryConsumer.start();
+
         this.mongoPoller.on("error", (error) => {
             debug("MongoDB polling error: " + error.message, error.stack);
         });
@@ -144,6 +188,9 @@ export default class Zamza {
         await this.metadataFetcher.start(this.config.jobs ? this.config.jobs.metadataFetcherMs : undefined);
         await this.httpServer.start();
 
+        this.replayConsumer.adjustSubscriptions([INTERNAL_TOPICS.REPLAY_TOPIC]);
+        this.retryConsumer.adjustSubscriptions([INTERNAL_TOPICS.RETRY_TOPIC]);
+
         this.setReadyState(true);
         debug("Running..");
     }
@@ -159,10 +206,18 @@ export default class Zamza {
         this.discovery.close();
         this.httpServer.close();
         await this.consumer.close();
+        await this.replayConsumer.close();
+        await this.retryConsumer.close();
         await this.producer.close();
+        await this.replayProducer.close();
+        await this.retryProducer.close();
         this.mongoWrapper.close();
         this.metrics.close();
         this.hookDealer.close();
+    }
+
+    public static isProduction(): boolean {
+        return process.env.NODE_ENV === "production";
     }
 
     public setAliveState(state: boolean): void {

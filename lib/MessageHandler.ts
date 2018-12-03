@@ -16,6 +16,13 @@ import HookDealer from "./HookDealer";
 const RETRY_TOPIC = "__zamza_retry_topic";
 const REPLAY_TOPIC = "__zamza_replay_topic";
 
+const INTERNAL_TOPICS = {
+    RETRY_TOPIC,
+    REPLAY_TOPIC,
+};
+
+export {INTERNAL_TOPICS};
+
 export default class MessageHandler {
 
     private readonly mongoPoller: MongoPoller;

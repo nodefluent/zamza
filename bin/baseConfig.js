@@ -4,6 +4,7 @@ module.exports = {
         producer: {
             noptions: {
                 "metadata.broker.list": "localhost:9092",
+                "client.id": "zamza-base-client",
                 "event_cb": false,
                 // "compression.codec": "snappy",
                 "api.version.request": true,
@@ -80,5 +81,12 @@ module.exports = {
     jobs: {
         topicConfigPollingMs: 15000,
         metadataFetcherMs: 23 * 62000,
+    },
+    hooks: {
+        enabled: true,
+        timeout: 1500,
+        only: false,
+        retries: 2,
+        retryTimeoutMs: 1000,
     },
 };

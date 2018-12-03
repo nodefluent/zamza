@@ -15,6 +15,9 @@
 * added HookClient to process http requests of hooks
 * added hooks only mode
 * made some precautions to protect zamza internal topics
+* different additional consumer and producer types to handle hook replays and retries
+* handling of hooks in hookdealer
+* handling of retries in hookdealer
 
 ## 2018-11-22, Version 0.23.0
 

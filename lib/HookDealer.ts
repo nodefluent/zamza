@@ -6,28 +6,45 @@ import Zamza from "./Zamza";
 import { KafkaMessage } from "sinek";
 import { Metrics } from "./Metrics";
 import MongoPoller from "./db/MongoPoller";
-import { Hook, TopicConfig } from "./interfaces";
+import { Hook, TopicConfig, ReplayMessagePayload, RetryMessagePayload } from "./interfaces";
 import HookClient from "./HookClient";
+import RetryProducer from "./kafka/RetryProducer";
+import { INTERNAL_TOPICS } from "./MessageHandler";
+import { HookModel } from "./db/models";
 
-const DEFAULT_TIMEOUT = 2500;
+const DEFAULT_TIMEOUT = 1500;
+const DEFAUT_RETRIES = 0;
+const DEFAULT_RETRY_TIMEOUT = 1000;
 
 export default class HookDealer {
 
     private readonly metrics: Metrics;
     private readonly timeout: number;
+    private readonly retries: number;
+    private readonly retryTimeout: number;
     private readonly mongoPoller: MongoPoller;
+    private readonly hookModel: HookModel;
     private initialHooksLoaded: boolean = false;
-    private topicSubscriptionMap: any;
+    private topicSubscriptionMap: {[key: string]: Array<Hook & { ignoreReplay: boolean }>};
     private oldTopicSubscriptionLength: number = 0;
     private hookClient: HookClient;
+    private retryProducer: RetryProducer;
 
     constructor(zamza: Zamza) {
         this.metrics = zamza.metrics;
-        this.timeout = zamza.config.hooks ?
-            zamza.config.hooks.timeout ? zamza.config.hooks.timeout : DEFAULT_TIMEOUT
-            : DEFAULT_TIMEOUT;
+
+        zamza.config.hooks = zamza.config.hooks ? zamza.config.hooks : {};
+
+        this.timeout = zamza.config.hooks.timeout ? zamza.config.hooks.timeout : DEFAULT_TIMEOUT;
+        this.retries = typeof zamza.config.hooks.retries === "number" ? zamza.config.hooks.retries : DEFAUT_RETRIES;
+        this.retryTimeout = zamza.config.hooks.retryTimeoutMs ?
+            zamza.config.hooks.retryTimeoutMs : DEFAULT_RETRY_TIMEOUT;
+
         this.mongoPoller = zamza.mongoPoller;
+        this.hookModel = zamza.mongoWrapper.getHook();
         this.hookClient = new HookClient(zamza);
+        this.retryProducer = zamza.retryProducer;
+        this.topicSubscriptionMap = {};
     }
 
     private findConfigForTopic(topic: string): TopicConfig | null {
@@ -54,7 +71,7 @@ export default class HookDealer {
 
         let endpoints = 0;
         // transform the hooks into a structure that is more performant to process
-        const topicSubscriptionMap: any = {};
+        const topicSubscriptionMap: {[key: string]: Array<Hook & { ignoreReplay: boolean }>} = {};
         hooks.forEach((hook) => {
 
             if (hook.disabled || !hook.subscriptions) {
@@ -71,7 +88,7 @@ export default class HookDealer {
                     topicSubscriptionMap[subscription.topic] = [];
                 }
 
-                const hookClone = JSON.parse(JSON.stringify(hook));
+                const hookClone: Hook & { ignoreReplay: boolean } = JSON.parse(JSON.stringify(hook));
                 delete hookClone.subscriptions;
                 hookClone.ignoreReplay = subscription.ignoreReplay;
 
@@ -90,9 +107,45 @@ export default class HookDealer {
         this.topicSubscriptionMap = topicSubscriptionMap;
     }
 
-    private async handleSubscription(mappedHook: any): Promise<void> {
-        // TODO: create hook http client use here to make call, handle errors and timeouts -> replay
+    private async handleSubscription(message: KafkaMessage,
+                                     mappedHook: Hook & { ignoreReplay: boolean },
+                                     replayPayload?: ReplayMessagePayload,
+                                     retryPayload?: RetryMessagePayload): Promise<void> {
 
+        const body: any = {
+            message,
+            context: null,
+        };
+
+        if (replayPayload) {
+            delete replayPayload.message;
+            body.context = {
+                type: "replay",
+                data: replayPayload,
+            };
+        } else if (retryPayload) {
+            delete retryPayload.message;
+            body.context = {
+                type: "retry",
+                data: replayPayload,
+            };
+        }
+
+        const options: any = {
+            method: "POST",
+            url: mappedHook.endpoint,
+            headers: {
+                "content-type": "application/json",
+            },
+            timeout: this.timeout,
+            body: JSON.stringify(body),
+        };
+
+        if (mappedHook.authorizationHeader && mappedHook.authorizationValue) {
+            options.headers[mappedHook.authorizationHeader] = mappedHook.authorizationValue;
+        }
+
+        await this.hookClient.call(options, 200);
     }
 
     public async handleMessage(message: KafkaMessage): Promise<boolean> {
@@ -106,7 +159,28 @@ export default class HookDealer {
 
         this.metrics.inc("hook_processed_messages");
 
-        // TODO: handle retry count
+        await Bluebird.map(subscriptions, (subscription) => {
+            return this.handleSubscription(message, subscription).then(() => {
+                this.metrics.inc("hook_delivered");
+            }).catch((_) => {
+                this.metrics.inc("hook_failed");
+                if (this.retries > 0) {
+
+                    const retryMessage: RetryMessagePayload = {
+                        message,
+                        hookId: subscription._id,
+                        retryCount: 0,
+                    };
+
+                    this.metrics.inc("hook_produce_retry");
+                    setTimeout(() => {
+                        this.retryProducer.produceMessage(INTERNAL_TOPICS.RETRY_TOPIC,
+                            undefined, undefined, JSON.stringify(retryMessage));
+                    }, this.retryTimeout);
+                }
+            });
+        }, { concurrency: 2 });
+
         this.metrics.inc("hook_processed_messages_success");
         return true;
     }
@@ -117,14 +191,69 @@ export default class HookDealer {
 
         this.metrics.inc("hook_processed_retry_messages");
 
-        // no topic config present anymore, skip hooks for replays
-        if (!this.findConfigForTopic(message.topic)) {
+        if (!message.value) {
             return false;
         }
 
-        // TODO: handle retry count
-        this.metrics.inc("hook_processed_retry_messages_success");
-        return true;
+        let parsedMessage: RetryMessagePayload | null = null;
+        try {
+            if (typeof message.value === "string") {
+                parsedMessage = JSON.parse(Buffer.isBuffer(message.value) ?
+                    message.value.toString("utf8") : message.value);
+            } else {
+                parsedMessage = message.value;
+            }
+
+            if (!parsedMessage) {
+                throw new Error("Parsed Message empty.");
+            }
+
+            if (!parsedMessage.hookId) {
+                throw new Error("HookID missing on retry message payload.");
+            }
+        } catch (error) {
+            debug("Failed to parse retry message payload: " + error.message);
+            return false;
+        }
+
+        // no topic config present anymore, skip hooks for replays
+        if (!this.findConfigForTopic(parsedMessage!.message.topic)) {
+            this.metrics.inc("hook_processed_retry_messages_success");
+            return false;
+        }
+
+        // subscription has been deleted OR is disabled currently
+        // let error fall through for retry
+        const subscription = await this.hookModel.get(parsedMessage.hookId);
+        if (!subscription || subscription.disabled) {
+            return false;
+        }
+
+        return this.handleSubscription(parsedMessage.message, subscription as any, parsedMessage).then(() => {
+            this.metrics.inc("hook_retry_delivered");
+            this.metrics.inc("hook_processed_retry_messages_success");
+            return true;
+        }).catch((_) => {
+            this.metrics.inc("hook_retry_failed");
+            if (this.retries > parsedMessage!.retryCount) {
+
+                const retryMessage: RetryMessagePayload = {
+                    message,
+                    hookId: subscription._id,
+                    retryCount: parsedMessage!.retryCount + 1,
+                };
+
+                this.metrics.inc("hook_produce_retry");
+                setTimeout(() => {
+                    this.retryProducer.produceMessage(INTERNAL_TOPICS.RETRY_TOPIC,
+                        undefined, undefined, JSON.stringify(retryMessage));
+                }, this.retryTimeout);
+            } else {
+                this.metrics.inc("hook_retry_reached");
+            }
+            this.metrics.inc("hook_processed_retry_messages_success");
+            return true;
+        });
     }
 
     public async handleReplayMessage(message: KafkaMessage): Promise<boolean> {
@@ -133,13 +262,36 @@ export default class HookDealer {
 
         this.metrics.inc("hook_processed_replay_messages");
 
+        if (!message.value) {
+            return false;
+        }
+
+        let parsedMessage: ReplayMessagePayload | null = null;
+        try {
+            if (typeof message.value === "string") {
+                parsedMessage = JSON.parse(Buffer.isBuffer(message.value) ?
+                    message.value.toString("utf8") : message.value);
+            } else {
+                parsedMessage = message.value;
+            }
+
+            if (!parsedMessage) {
+                throw new Error("Parsed Message empty.");
+            }
+        } catch (error) {
+            debug("Failed to parse retry message payload: " + error.message);
+            return false;
+        }
+
         // no topic config present anymore, skip hooks for replays
-        if (!this.findConfigForTopic(message.topic)) {
+        if (!this.findConfigForTopic(parsedMessage.message.topic)) {
+            this.metrics.inc("hook_processed_retry_messages_success");
             return false;
         }
 
         // TODO: handle replay enabled, how to trigger replay in the first place?
-        // TODO: option to run hook and produce only (without storing messages to mongodb)
+        // TODO: resource to ensure that only one replay is active per given time
+
         this.metrics.inc("hook_processed_replay_messages_success");
         return true;
     }

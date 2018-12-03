@@ -7,3 +7,5 @@ export * from "./TopicConfig";
 export * from "./KeyIndex";
 export * from "./TopicMetadata";
 export * from "./Hook";
+export * from "./RetryMessagePayload";
+export * from "./ReplayMessagePayload";
