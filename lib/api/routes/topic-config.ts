@@ -25,6 +25,12 @@ const routeTopicConfig = (zamza: Zamza) => {
                 "/api/config/hook/name/:name",
 
                 "/api/config/replay",
+                "/api/config/replays",
+                "/api/config/replay/lag",
+                "/api/config/replay/analytics",
+                "/api/config/replay/:topic",
+                "/api/config/replay/flushone",
+                "/api/config/replay/flushall",
             ],
         });
     });

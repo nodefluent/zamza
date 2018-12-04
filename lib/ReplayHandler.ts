@@ -14,17 +14,26 @@ import { Metrics } from "./Metrics";
 export class ReplayHandler {
 
     private readonly zamza: Zamza;
+    private readonly instanceId: string;
     private readonly replayModel: ReplayModel;
     private readonly replayProducer: ReplayProducer;
     private readonly metrics: Metrics;
     public mirrorConsumer: MirrorConsumer | null;
+    public currentTargetTopic: string | null;
+    public currentConsumerGroup: string | null;
 
     constructor(zamza: Zamza) {
         this.zamza = zamza;
+        this.instanceId = uuid.v4();
+
+        debug("Instance Replay ID:", this.instanceId);
+
         this.replayModel = zamza.mongoWrapper.getReplay();
         this.replayProducer = zamza.replayProducer;
         this.metrics = zamza.metrics;
         this.mirrorConsumer = null;
+        this.currentTargetTopic = null;
+        this.currentConsumerGroup = null;
     }
 
     private createConsumerGroupId(): string {
@@ -42,6 +51,84 @@ export class ReplayHandler {
             undefined, JSON.stringify(replayMessage));
     }
 
+    public isCurrentlyRunning() {
+        if (this.mirrorConsumer) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public dealsWithTopic(topic: string) {
+        if (this.currentTargetTopic === topic) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public async getCurrentReplay() {
+
+        // clean-up
+        const replayForInstanceId = await this.replayModel.getForInstanceId(this.instanceId);
+        if (replayForInstanceId && !this.isCurrentlyRunning()) {
+            await this.replayModel.delete(replayForInstanceId.topic);
+        }
+
+        // clean-up
+        if (!replayForInstanceId && this.isCurrentlyRunning()) {
+            await this.replayModel.upsert({
+                instanceId: this.instanceId,
+                topic: this.currentTargetTopic!,
+                consumerGroup: this.currentConsumerGroup!,
+                timestamp: Date.now(),
+            });
+        }
+
+        return {
+            instanceId: this.instanceId,
+            replay: await this.replayModel.getForInstanceId(this.instanceId),
+        };
+    }
+
+    public async isBeingReplayedByAnyInstance(topic: string) {
+        const replay = await this.replayModel.get(topic);
+        return !!replay;
+    }
+
+    public async flushall() {
+        debug("Flushing all instances..");
+        await this.flushone();
+        await this.replayModel.truncate();
+        debug("Flushed.");
+        return true;
+    }
+
+    public async flushone() {
+        debug("Flushing current instance");
+
+        if (this.currentTargetTopic) {
+            await this.replayModel.delete(this.currentTargetTopic);
+        }
+
+        await this.replayModel.deleteForInstanceId(this.instanceId);
+
+        if (this.mirrorConsumer) {
+            await this.mirrorConsumer.close();
+        }
+
+        this.mirrorConsumer = null;
+        this.currentConsumerGroup = null;
+        this.currentTargetTopic = null;
+
+        debug("Flushed.");
+        return true;
+    }
+
+    public listReplays() {
+        return this.replayModel.list();
+    }
+
     public async startReplay(topic: string, consumerGroup?: string): Promise<Replay> {
 
         if (this.mirrorConsumer) {
@@ -51,10 +138,14 @@ export class ReplayHandler {
         debug("Starting replay..");
 
         const replay: Replay = {
+            instanceId: this.instanceId,
             topic,
             consumerGroup: consumerGroup ? consumerGroup : this.createConsumerGroupId(),
             timestamp: Date.now(),
         };
+
+        this.currentConsumerGroup = replay.consumerGroup;
+        this.currentTargetTopic = topic;
 
         await this.replayModel.upsert(replay);
 
@@ -77,8 +168,12 @@ export class ReplayHandler {
         debug("Stopping replay..");
 
         await this.mirrorConsumer.close();
-        await this.replayModel.delete();
+        await this.replayModel.delete(this.currentTargetTopic!);
+
         this.mirrorConsumer = null;
+        this.currentTargetTopic = null;
+        this.currentConsumerGroup = null;
+
         return true;
     }
 

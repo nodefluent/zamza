@@ -23,6 +23,9 @@ const routeInfo = (zamza: Zamza) => {
             self: "/api/info",
             children: [
                 "/api/info/consumer",
+                "/api/info/consumer/analytics",
+                "/api/info/consumer/lag",
+
                 "/api/info/producer",
 
                 "/api/info/consumer-replay",
@@ -92,6 +95,28 @@ const routeInfo = (zamza: Zamza) => {
 
         try {
             res.status(200).json(await consumer.getKafkaStats());
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
+    });
+
+    router.get("/consumer/analytics", async (req, res) => {
+
+        try {
+            res.status(200).json(await consumer.getAnalytics());
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
+    });
+
+    router.get("/consumer/lag", async (req, res) => {
+
+        try {
+            res.status(200).json(await consumer.getLagStatus());
         } catch (error) {
             res.status(500).json({
                 error: "An error occured " + error.message,

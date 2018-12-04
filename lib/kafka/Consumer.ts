@@ -28,6 +28,20 @@ export default class Consumer {
         }, 45000);
     }
 
+    private async processMessageWithRetry(message: KafkaMessage, attempts = 0): Promise<boolean> {
+        try {
+            attempts++;
+            await this.zamza.messageHandler.handleMessage(message);
+            return true;
+        } catch (error) {
+            debug("Failed to process kafka message, attempt", attempts, "with error", error.message);
+            return (new Promise((resolve) => setTimeout(resolve, attempts * 1000)))
+                .then(() => {
+                    return this.processMessageWithRetry(message, attempts);
+                });
+        }
+    }
+
     public async start() {
 
         debug("Connecting..");
@@ -41,21 +55,20 @@ export default class Consumer {
             callback(null);
         }, false, false, this.config.batchOptions);
 
+        this.consumer.enableAnalytics({
+            analyticsInterval: 1000 * 60 * 4,
+            lagFetchInterval: 1000 * 60 * 8,
+        });
+
         debug("Connected.");
     }
 
-    private async processMessageWithRetry(message: KafkaMessage, attempts = 0): Promise<boolean> {
-        try {
-            attempts++;
-            await this.zamza.messageHandler.handleMessage(message);
-            return true;
-        } catch (error) {
-            debug("Failed to process kafka message, attempt", attempts, "with error", error.message);
-            return (new Promise((resolve) => setTimeout(resolve, attempts * 1000)))
-                .then(() => {
-                    return this.processMessageWithRetry(message, attempts);
-                });
-        }
+    public getAnalytics() {
+        return this.consumer ? this.consumer.getAnalytics() : null;
+    }
+
+    public getLagStatus() {
+        return this.consumer ? this.consumer.getLagStatus(false) : null;
     }
 
     public adjustSubscriptions(topics: string[]) {
@@ -87,6 +100,7 @@ export default class Consumer {
         }
 
         if (this.consumer) {
+            this.consumer.haltAnalytics();
             await this.consumer.close(true);
             this.consumer = null;
         }

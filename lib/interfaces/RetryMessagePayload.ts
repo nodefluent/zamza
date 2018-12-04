@@ -4,4 +4,5 @@ export interface RetryMessagePayload {
     hookId?: string;
     retryCount: number;
     message: KafkaMessage;
+    fromReplay?: boolean;
 }

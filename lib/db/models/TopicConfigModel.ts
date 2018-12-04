@@ -6,7 +6,7 @@ import Zamza from "../../Zamza";
 import { Metrics } from "../../Metrics";
 import MongoWrapper from "../MongoWrapper";
 
-const ALLOWED_POLICIES = ["compact", "delete", "none"];
+const ALLOWED_POLICIES = ["compact", "delete", "none", "compact_and_delete"];
 
 export class TopicConfigModel {
 
@@ -92,6 +92,10 @@ export class TopicConfigModel {
 
         if (cleanupPolicy === "none" && (retentionMs || retentionMs > 0)) {
             throw new Error("cleanupPolicy 'none' requires retentionMs to be 0 or null.");
+        }
+
+        if (cleanupPolicy === "compact_and_delete" && (!retentionMs || retentionMs <= 0)) {
+            throw new Error("cleanupPolicy 'compact_and_delete' requires retentionMs to be set.");
         }
 
         // important to create indices before (key index model) topic gets first writes

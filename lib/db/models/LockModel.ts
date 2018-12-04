@@ -32,7 +32,7 @@ export class LockModel {
         const schema = new schemaConstructor(schemaDefinition);
 
          // single index
-        // schema.index({ name: 1, type: -1});
+        schema.index({ name: 1 }, { unique: true });
 
         // compound index
         schema.index({ name: 1, timestamp: 1 }, { unique: false });

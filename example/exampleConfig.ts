@@ -86,7 +86,7 @@ const zamzaConfig = {
     },
     jobs: {
         topicConfigPollingMs: 32000,
-        metadataFetcherMs: 23 * 62000,
+        metadataFetcherMs: 39 * 60 * 1000,
     },
     hooks: {
         enabled: true,
@@ -94,6 +94,8 @@ const zamzaConfig = {
         only: false,
         retries: 3,
         retryTimeoutMs: 1000,
+        subscriptionConcurrency: 4,
+        replayConcurrency: 4,
     },
 };
 

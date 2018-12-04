@@ -20,6 +20,15 @@
 * handling of retries in hookdealer
 * consumer and producer info endpoints for additional clients
 * new endpoints /api/config/replay to use ReplayHandler (single instance based)
+* added replay logic to HookDealer
+* enabling lag analytics for main kafka consumer and exposing through info api
+* adjusted ReplayHandler logic to work on a topic per instance basis
+* added endpoints to work with ReplayHandler
+* added lag analytics for mirror consumer on replays
+* added new topic-config cleanupPolicy type compact_and_delete
+* updated dependencies
+* updated readme with a short documentation on API resources
+* added slow request log for requests above 1.5 seconds
 
 ## 2018-11-22, Version 0.23.0
 

@@ -17,5 +17,8 @@ export interface ZamzaConfig {
         only?: boolean;
         retries?: number;
         retryTimeoutMs?: number;
+        subscriptionConcurrency?: number;
+        replayConcurrency?: number;
+        ignoreConfigValidation?: boolean;
     };
 }

@@ -16,6 +16,7 @@ import { routeRoot, routeTopicConfig, routeInfo,
 import AccessControll from "./AccessControll";
 
 const DEFAULT_PORT = 1912;
+const WARNING_LOG_MS = 1500;
 
 export default class HttpServer {
 
@@ -39,6 +40,34 @@ export default class HttpServer {
 
         app.use((req, res, next) => {
 
+            const onEndOfRequest = () => {
+                res.removeListener("finish", onEndOfRequest);
+                res.removeListener("close", onEndOfRequest);
+
+                const diff = Date.now() - res.locals.startTime;
+                // debug(`Access-log: ${req.method} : ${req.url} => ${res.statusCode} after ${diff} ms.`);
+
+                if (diff >= WARNING_LOG_MS) {
+                    debug(`Slow request alert: ${req.method} : ${req.url} took ${diff} ms.` +
+                        `Token used: ${this.accessControll.anonymiseToken(req.headers.authorization)}.`);
+                }
+            };
+
+            // crawler check
+            if (req.path === "/robots.txt") {
+                res.status(200);
+                res.set("content-type", "text/plain");
+                return res.end("User-agent: *\nDisallow: /");
+            }
+
+            // dev browser check
+            if (req.path === "/favicon.ico") {
+                return res.status(404).end();
+            }
+
+            res.on("finish", onEndOfRequest);
+            res.on("close", onEndOfRequest);
+
             this.zamza.metrics.inc("http_calls");
             if (req.url && req.url.startsWith("/api")) {
                 this.zamza.metrics.inc("api_calls");
@@ -46,7 +75,9 @@ export default class HttpServer {
             }
 
             res.set("x-powered-by", `${pjson.name}/${pjson.version}`);
+            res.set("cache-control", "no-cache");
             res.locals.access = this.accessControll;
+
             next();
         });
 

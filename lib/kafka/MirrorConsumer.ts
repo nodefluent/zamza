@@ -28,6 +28,20 @@ export default class MirrorConsumer {
         }, 45000);
     }
 
+    private async processMessageWithRetry(message: KafkaMessage, messageHandle: any, attempts = 0): Promise<boolean> {
+        try {
+            attempts++;
+            await messageHandle(message);
+            return true;
+        } catch (error) {
+            debug("Failed to process kafka message, attempt", attempts, "with error", error.message);
+            return (new Promise((resolve) => setTimeout(resolve, attempts * 1000)))
+                .then(() => {
+                    return this.processMessageWithRetry(message, messageHandle, attempts);
+                });
+        }
+    }
+
     public async start(messageHandle: any) {
 
         debug("Connecting..");
@@ -41,21 +55,20 @@ export default class MirrorConsumer {
             callback(null);
         }, false, false, this.config.batchOptions);
 
+        this.consumer.enableAnalytics({
+            analyticsInterval: 1000 * 60 * 3,
+            lagFetchInterval: 1000 * 60 * 6,
+        });
+
         debug("Connected.");
     }
 
-    private async processMessageWithRetry(message: KafkaMessage, messageHandle: any, attempts = 0): Promise<boolean> {
-        try {
-            attempts++;
-            await messageHandle(message);
-            return true;
-        } catch (error) {
-            debug("Failed to process kafka message, attempt", attempts, "with error", error.message);
-            return (new Promise((resolve) => setTimeout(resolve, attempts * 1000)))
-                .then(() => {
-                    return this.processMessageWithRetry(message, messageHandle, attempts);
-                });
-        }
+    public getAnalytics() {
+        return this.consumer ? this.consumer.getAnalytics() : null;
+    }
+
+    public getLagStatus() {
+        return this.consumer ? this.consumer.getLagStatus(false) : null;
     }
 
     public adjustSubscriptions(topics: string[]) {
@@ -87,6 +100,7 @@ export default class MirrorConsumer {
         }
 
         if (this.consumer) {
+            this.consumer.haltAnalytics();
             await this.consumer.close(true);
             this.consumer = null;
         }

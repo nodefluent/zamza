@@ -15,6 +15,8 @@ import { HookModel } from "./db/models";
 const DEFAULT_TIMEOUT = 1500;
 const DEFAUT_RETRIES = 0;
 const DEFAULT_RETRY_TIMEOUT = 1000;
+const DEFAULT_SUBSCRIPTION_CONCURRENCY = 4;
+const DEFAULT_REPLAY_CONCURRENCY = 4;
 
 export default class HookDealer {
 
@@ -24,6 +26,8 @@ export default class HookDealer {
     private readonly retryTimeout: number;
     private readonly mongoPoller: MongoPoller;
     private readonly hookModel: HookModel;
+    private readonly subscriptionConcurrency: number;
+    private readonly replayConcurrency: number;
     private initialHooksLoaded: boolean = false;
     private topicSubscriptionMap: {[key: string]: Array<Hook & { ignoreReplay: boolean }>};
     private oldTopicSubscriptionLength: number = 0;
@@ -39,12 +43,52 @@ export default class HookDealer {
         this.retries = typeof zamza.config.hooks.retries === "number" ? zamza.config.hooks.retries : DEFAUT_RETRIES;
         this.retryTimeout = zamza.config.hooks.retryTimeoutMs ?
             zamza.config.hooks.retryTimeoutMs : DEFAULT_RETRY_TIMEOUT;
+        this.subscriptionConcurrency = zamza.config.hooks.subscriptionConcurrency ?
+            zamza.config.hooks.subscriptionConcurrency : DEFAULT_SUBSCRIPTION_CONCURRENCY;
+        this.replayConcurrency = zamza.config.hooks.replayConcurrency ?
+            zamza.config.hooks.replayConcurrency : DEFAULT_REPLAY_CONCURRENCY;
+
+        try {
+            this.validateConfigForConvenience(zamza.config.hooks.ignoreConfigValidation);
+        } catch (error) {
+            debug("(HookDealer) Validation error: " + error.message);
+            process.exit(1);
+        }
 
         this.mongoPoller = zamza.mongoPoller;
         this.hookModel = zamza.mongoWrapper.getHook();
         this.hookClient = new HookClient(zamza);
         this.retryProducer = zamza.retryProducer;
         this.topicSubscriptionMap = {};
+    }
+
+    private validateConfigForConvenience(ignoreConfigValidation?: boolean) {
+
+        if (ignoreConfigValidation) {
+            return;
+        }
+
+        if (typeof this.timeout !== "number" || this.timeout < 50 || this.timeout > 45000) {
+            throw new Error("Configuring the hook timeout below 50 ms or above 45 seconds is not a good idea.");
+        }
+
+        if (typeof this.retries !== "number" || this.retries < 0 || this.retries > 25) {
+            throw new Error("Configuring the retries below 0 or above 25 is not a good idea.");
+        }
+
+        if (typeof this.retryTimeout !== "number" || this.retryTimeout < 0 || this.retryTimeout > 15000) {
+            throw new Error("Configuring the retryTimeout below 0 ms or above 15 seconds is not a good idea.");
+        }
+
+        if (typeof this.subscriptionConcurrency !== "number" || this.subscriptionConcurrency < 1 ||
+                this.subscriptionConcurrency > 150) {
+            throw new Error("Configuring the subscriptionConcurrency below 1 or above 150 is not a good idea.");
+        }
+
+        if (typeof this.replayConcurrency !== "number" || this.replayConcurrency < 1 ||
+                this.replayConcurrency > 150) {
+            throw new Error("Configuring the replayConcurrency below 1 or above 150 is not a good idea.");
+        }
     }
 
     private findConfigForTopic(topic: string): TopicConfig | null {
@@ -67,6 +111,7 @@ export default class HookDealer {
 
         if (!this.initialHooksLoaded) {
             debug("Initial hooks loaded", hooks.length);
+            this.initialHooksLoaded = true;
         }
 
         let endpoints = 0;
@@ -170,6 +215,7 @@ export default class HookDealer {
                         message,
                         hookId: subscription._id,
                         retryCount: 0,
+                        fromReplay: false,
                     };
 
                     this.metrics.inc("hook_produce_retry");
@@ -179,7 +225,7 @@ export default class HookDealer {
                     }, this.retryTimeout);
                 }
             });
-        }, { concurrency: 2 });
+        }, { concurrency: this.subscriptionConcurrency });
 
         this.metrics.inc("hook_processed_messages_success");
         return true;
@@ -229,7 +275,8 @@ export default class HookDealer {
             return false;
         }
 
-        return this.handleSubscription(parsedMessage.message, subscription as any, parsedMessage).then(() => {
+        return this.handleSubscription(parsedMessage.message, subscription as any, undefined,
+                parsedMessage as any).then(() => {
             this.metrics.inc("hook_retry_delivered");
             this.metrics.inc("hook_processed_retry_messages_success");
             return true;
@@ -289,7 +336,36 @@ export default class HookDealer {
             return false;
         }
 
-        // TODO: handle replay enabled on subscription with concurrency
+        let subscriptions = this.topicSubscriptionMap[parsedMessage.message.topic];
+        if (!subscriptions) {
+            return false;
+        }
+
+        // filter out subscriptions that dont participate in replays
+        subscriptions = subscriptions.filter((subscription) => !subscription.ignoreReplay);
+
+        await Bluebird.map(subscriptions, (subscription) => {
+            return this.handleSubscription(parsedMessage!.message, subscription, parsedMessage as any).then(() => {
+                this.metrics.inc("hook_replay_delivered");
+            }).catch((_) => {
+                this.metrics.inc("hook_replay_failed");
+                if (this.retries > 0) {
+
+                    const retryMessage: RetryMessagePayload = {
+                        message,
+                        hookId: subscription._id,
+                        retryCount: 0,
+                        fromReplay: true,
+                    };
+
+                    this.metrics.inc("hook_replay_produce_retry");
+                    setTimeout(() => {
+                        this.retryProducer.produceMessage(INTERNAL_TOPICS.RETRY_TOPIC,
+                            undefined, undefined, JSON.stringify(retryMessage));
+                    }, this.retryTimeout);
+                }
+            });
+        }, { concurrency: this.replayConcurrency });
 
         this.metrics.inc("hook_processed_replay_messages_success");
         return true;

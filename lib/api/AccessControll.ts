@@ -78,16 +78,6 @@ export default class AccessControll {
         }
     }
 
-    private anonymiseToken(token: string): string {
-
-        let anonymisedToken = token.substr(0, 3);
-        for (let i = 3; i < token.length; i++) {
-            anonymisedToken += "#";
-        }
-
-        return anonymisedToken;
-    }
-
     private topicAccessAllowedForToken(token: string | null, topic: string): boolean {
 
         if (topic && topic.startsWith(ZAMZA_TOPIC_PREFIX)) {
@@ -206,6 +196,20 @@ export default class AccessControll {
         debug(permissionType, "access not allowed for token", "token", "reason: no wildcard, no permission.");
         this.metrics.inc("access_bad");
         return false;
+    }
+
+    public anonymiseToken(token?: string): string {
+
+        if (!token) {
+            return "null|undefined";
+        }
+
+        let anonymisedToken = token.substr(0, 3);
+        for (let i = 3; i < token.length; i++) {
+            anonymisedToken += "#";
+        }
+
+        return anonymisedToken;
     }
 
     public topicAccessAllowedForRequest(req: any, topic: string) {

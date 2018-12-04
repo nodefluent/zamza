@@ -489,6 +489,11 @@ export class KeyIndexModel {
 
     public async upsert(topic: string, document: KeyIndex): Promise<KeyIndex> {
 
+        if (!document.key) {
+            debug("Cannot upsert message without key.", topic, document.key);
+            return null as any;
+        }
+
         const startTime = Date.now();
 
         const query = {

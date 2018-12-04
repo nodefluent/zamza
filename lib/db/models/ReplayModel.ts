@@ -5,8 +5,6 @@ import Zamza from "../../Zamza";
 import { Metrics } from "../../Metrics";
 import { Replay } from "../../interfaces";
 
-const VERSION = 1;
-
 export class ReplayModel {
 
     public readonly metrics: Metrics;
@@ -22,7 +20,7 @@ export class ReplayModel {
     public registerModel(mongoose: any, schemaConstructor: any) {
 
         const schemaDefinition = {
-            version: Number,
+            instanceId: String,
             topic: String,
             timestamp: Number,
             consumerGroup: String,
@@ -30,7 +28,7 @@ export class ReplayModel {
 
         const schema = new schemaConstructor(schemaDefinition);
 
-        schema.index({ version: 1, type: -1});
+        schema.index({ topic: 1, type: -1});
 
         this.model = mongoose.model(this.name, schema);
 
@@ -46,14 +44,36 @@ export class ReplayModel {
         debug("Registered model with schema.");
     }
 
-    public get(): Promise<Replay> {
-        return this.model.findOne({ version: VERSION }).lean().exec().then((replay: any) => {
+    public list(): Promise<Replay[]> {
+        return this.model.find({}).lean().exec().then((replays: any[]) => {
+            return replays.map((replay) => {
+                delete replay._id;
+                delete replay.__v;
+                return replay as Replay;
+            });
+        });
+    }
+
+    public get(topic: string): Promise<Replay> {
+        return this.model.findOne({ topic }).lean().exec().then((replay: any) => {
 
             if (!replay) {
                 return replay;
             }
 
-            delete replay.version;
+            delete replay._id;
+            delete replay.__v;
+            return replay as Replay;
+        });
+    }
+
+    public getForInstanceId(instanceId: string): Promise<Replay> {
+        return this.model.findOne({ instanceId }).lean().exec().then((replay: any) => {
+
+            if (!replay) {
+                return replay;
+            }
+
             delete replay._id;
             delete replay.__v;
             return replay as Replay;
@@ -63,7 +83,7 @@ export class ReplayModel {
     public upsert(replay: Replay): Promise<any> {
 
         const query = {
-            version: VERSION,
+            topic: replay.topic,
         };
 
         const queryOptions = {
@@ -73,7 +93,15 @@ export class ReplayModel {
         return this.model.findOneAndUpdate(query, replay, queryOptions).exec();
     }
 
-    public delete() {
-        return this.model.deleteMany({version: VERSION}).exec();
+    public delete(topic: string) {
+        return this.model.deleteMany({ topic }).exec();
+    }
+
+    public deleteForInstanceId(instanceId: string) {
+        return this.model.deleteMany({ instanceId }).exec();
+    }
+
+    public truncate() {
+        return this.model.deleteMany({}).exec();
     }
 }
