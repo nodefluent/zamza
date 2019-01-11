@@ -1,6 +1,10 @@
 # zamza CHANGELOG
 
-## 2018-12-04, Version 0.24.0
+## 2019-01-11, Version 0.25.0
+
+
+
+## 2018-12-04, Version 0.24.0-0.24.1
 
 * **BREAKING** put earliest and latest in correct order (was the other way around)
 * added hookmodel to manage http subscriptions
