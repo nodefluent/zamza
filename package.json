@@ -14,8 +14,8 @@
     "build": "yarn lint && rm -rf dist/ && tsc -p tsconfig.json",
     "_start": "DEBUG=zamza:* node dist/example/index.js",
     "start": "yarn build && yarn _start",
-    "lint": "tslint -c tslint.json",
-    "fix": "tslint -c tslint.json --fix",
+    "lint": "tslint -c tslint.json -p tsconfig.json",
+    "fix": "tslint -c tslint.json -p tsconfig.json --fix",
     "pkg:i": "./scripts/self-install.sh",
     "pkg:u": "./scripts/self-update.sh"
   },

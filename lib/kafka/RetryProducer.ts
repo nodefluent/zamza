@@ -67,7 +67,7 @@ export default class RetryProducer {
         }
 
         if (this.producer) {
-            this.producer.close(false);
+            this.producer.close();
             this.producer = null;
         }
     }

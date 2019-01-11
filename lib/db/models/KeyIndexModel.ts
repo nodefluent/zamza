@@ -54,9 +54,8 @@ export class KeyIndexModel {
             partition: Number,
             offset: Number,
             keyValue: Buffer,
-            value: Buffer,
-            timestampValue: Buffer,
-            deleteAt: Number,
+            value: mongoose.Schema.Types.Mixed,
+            deleteAt: Date,
             fromStream: Boolean,
             storedAt: Number,
         };
@@ -99,10 +98,14 @@ export class KeyIndexModel {
 
     private static cleanMessageResultForResponse(topic: string, message: KeyIndex):
         {$index: string, topic: string, partition: number, offset: number,
-            key: Buffer, value: Buffer, timestamp: number} {
+            key: Buffer, value: any, timestamp: number} {
 
         if (!message) {
             return message;
+        }
+
+        if (message.value && Buffer.isBuffer(message.value)) {
+            message.value = message.value.toString("utf8");
         }
 
         const cleanedMessage: any = {};
@@ -112,9 +115,8 @@ export class KeyIndexModel {
         cleanedMessage.partition = message.partition;
         cleanedMessage.offset = message.offset;
         cleanedMessage.key = message.keyValue ? message.keyValue.toString("utf8") : message.keyValue,
-        cleanedMessage.value = message.value ? message.value.toString("utf8") : message.value;
-        cleanedMessage.timestamp = message.timestampValue ?
-            parseInt(message.timestampValue.toString("utf8"), undefined) : message.timestampValue;
+        cleanedMessage.value = message.value;
+        cleanedMessage.timestamp = message.timestamp;
 
         return cleanedMessage;
     }
@@ -347,7 +349,7 @@ export class KeyIndexModel {
 
         const startTime = Date.now();
 
-        // TODO: range this a little? use timestampValue???
+        // TODO: range this a little? use timestamp
         const message = await this.getOrCreateModel(topic).findOne({
             timestamp,
         }).lean().exec();
@@ -439,9 +441,18 @@ export class KeyIndexModel {
             }
 
             try {
-                const value = JSON.parse(message.value.toString("utf8"));
-                if (!value || typeof value !== "object") {
-                    return;
+                let value = null;
+                if (typeof message.value !== "object" || Buffer.isBuffer(message.value)) {
+
+                    if (Buffer.isBuffer(message.value)) {
+                        value = JSON.parse(message.value.toString("utf8"));
+                    } else {
+                        value = JSON.parse(message.value);
+                    }
+
+                    if (!value || typeof value !== "object") {
+                        return;
+                    }
                 }
 
                 delete message.$index;

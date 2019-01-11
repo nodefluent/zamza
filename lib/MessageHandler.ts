@@ -21,7 +21,7 @@ const INTERNAL_TOPICS = {
     REPLAY_TOPIC,
 };
 
-export {INTERNAL_TOPICS};
+export { INTERNAL_TOPICS };
 
 export default class MessageHandler {
 
@@ -122,14 +122,33 @@ export default class MessageHandler {
         const messageHasTimestamp = (message as any).timestamp && typeof (message as any).timestamp === "number";
         const timeOfStoring = moment().valueOf();
 
+        // try to strip the value as raw, yet parsed as possible before storing
+        // happy path here is to turn a message buffer into its JSON object and store as such
+        // in case the value does not contain a JSON payload, it should be stored as RAW (message.value) representative
+        let alteredMessageValue = null;
+        if (message.value) {
+
+            if (Buffer.isBuffer(message.value)) {
+                alteredMessageValue = message.value.toString("utf8");
+            } else {
+                alteredMessageValue = message.value;
+            }
+
+            try {
+                alteredMessageValue = JSON.parse(alteredMessageValue);
+                // no way to validate the output here
+            } catch (_) {
+                alteredMessageValue = message.value;
+            }
+        }
+
         const keyIndex: KeyIndex = {
             key: keyAsString ? this.hash(keyAsString) : null,
             timestamp: messageHasTimestamp ? (message as any).timestamp : timeOfStoring,
             partition: message.partition,
             offset: message.offset,
             keyValue: keyAsBuffer,
-            value: Buffer.isBuffer(message.value) ? message.value : (message.value ? Buffer.from(message.value) : null),
-            timestampValue: messageHasTimestamp ? Buffer.from((message as any).timestamp + "") : null,
+            value: alteredMessageValue,
             deleteAt: null,
             fromStream,
             storedAt: timeOfStoring,
@@ -173,7 +192,7 @@ export default class MessageHandler {
 
             case "delete":
                 this.metrics.inc("processed_messages_delete");
-                keyIndex.deleteAt = moment(keyIndex.timestamp).add(topicConfig.retentionMs, "milliseconds").valueOf();
+                keyIndex.deleteAt = moment(keyIndex.timestamp).add(topicConfig.retentionMs, "milliseconds").toDate();
                 await this.keyIndexModel.insert(message.topic, keyIndex);
                 break;
 
@@ -181,7 +200,7 @@ export default class MessageHandler {
                 if (keyIndex.value !== null) {
                     this.metrics.inc("processed_messages_compactdelete");
                     keyIndex.deleteAt = moment(keyIndex.timestamp)
-                        .add(topicConfig.retentionMs, "milliseconds").valueOf();
+                        .add(topicConfig.retentionMs, "milliseconds").toDate();
                     await this.keyIndexModel.upsert(message.topic, keyIndex);
                 } else {
 

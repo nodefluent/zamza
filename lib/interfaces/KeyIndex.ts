@@ -4,9 +4,8 @@ export interface KeyIndex {
     partition: number;
     offset: number;
     keyValue: Buffer | null;
-    value: Buffer | null;
-    timestampValue: Buffer | null;
-    deleteAt: number | null;
+    value: any;
+    deleteAt: Date | null;
     fromStream: boolean;
     storedAt: number;
 }

@@ -51,7 +51,7 @@ export class LockModel {
 
         debug("Registered model with schema.");
     }
-    
+
     public async getLock(name: string, timeout: number = 25000): Promise<boolean> {
 
         let lock;
@@ -67,28 +67,28 @@ export class LockModel {
             new: true,
           });
         } catch (error) {
-    
+
           // duplicated key, happens when multiple clients access resource at the same time
           if (error.code === 11000) {
             this.metrics.inc("mongo_lock_miss");
             return false;
           }
-    
+
           // other error
           throw error;
         }
-    
+
         if (lock && lock.instanceId === this.instanceId) {
             this.metrics.inc("mongo_lock_hit");
-          return true;
+            return true;
         } else {
             this.metrics.inc("mongo_lock_miss");
-          return false;
+            return false;
         }
       }
-    
+
       public async extendLock(name: string, extendFor: number = 25000): Promise<boolean> {
-    
+
         let lock;
         try {
           lock = await this.model.findOneAndUpdate({
@@ -103,35 +103,35 @@ export class LockModel {
             new: true,
           });
         } catch (error) {
-    
+
           // duplicated key, happens when multiple clients access resource at the same time
           if (error.code === 11000) {
             this.metrics.inc("mongo_lock_extend_miss");
             return false;
           }
-    
+
           // other error
           throw error;
         }
-    
+
         if (lock) {
             this.metrics.inc("mongo_lock_extend_hit");
-          return true;
+            return true;
         } else {
             this.metrics.inc("mongo_lock_extend_miss");
-          return false;
+            return false;
         }
       }
-    
+
       public async removeLock(name: string): Promise<any> {
-    
+
         const { n } = await this.model.deleteOne({
           name,
           instanceId: this.instanceId,
           timestamp : { $gte : moment().valueOf() },
         });
 
-        if(n === 1){
+        if (n === 1) {
             this.metrics.inc("mongo_lock_removed");
             return true;
         } else {

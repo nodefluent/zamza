@@ -2,7 +2,13 @@
 
 ## 2019-01-11, Version 0.25.0
 
-
+* fixed multiple bugs in LockModel
+* fixed bug in KeyIndexModel, as exireAfterSeconds requires 'Date' and will not work on 'Number'
+* **BREAKING** storing message values now as 'Mixed' meaning you can store and retrieve JSON objects, directly
+this will allow to access and search through messages directly
+* **BREAKING** removed timestampValue field to safe some storage, if message is missing a timestamp field now,
+the time of insertion will be used instead
+* upgraded dependencies
 
 ## 2018-12-04, Version 0.24.0-0.24.1
 

@@ -67,7 +67,7 @@ export default class ReplayProducer {
         }
 
         if (this.producer) {
-            this.producer.close(false);
+            this.producer.close();
             this.producer = null;
         }
     }

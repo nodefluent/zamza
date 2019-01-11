@@ -77,7 +77,7 @@ export default class Producer {
         }
 
         if (this.producer) {
-            this.producer.close(false);
+            this.producer.close();
             this.producer = null;
         }
     }
