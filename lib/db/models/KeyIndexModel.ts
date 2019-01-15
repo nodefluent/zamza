@@ -428,6 +428,51 @@ export class KeyIndexModel {
         return this.paginateThroughTopic(topic, null, range, 1);
     }
 
+    public async analyseSingleMessageJSONSchema(topic: string) {
+
+        const latestMessages = await this.getRangeFromLatest(topic, 1);
+        const message = latestMessages.results.length ? latestMessages.results[0] : null;
+
+        if (!message || !message.value) {
+            throw new Error("The topic " + topic + " has not enough fetchable messages"
+                + " to create a stable JSON schema. (At least 1 message with non null value required.)");
+        }
+
+        try {
+            let value = null;
+            if (typeof message.value !== "object" || Buffer.isBuffer(message.value)) {
+
+                if (Buffer.isBuffer(message.value)) {
+                    value = JSON.parse(message.value.toString("utf8"));
+                } else {
+                    value = JSON.parse(message.value);
+                }
+
+                if (!value || typeof value !== "object") {
+                    return;
+                }
+            }
+
+            delete message.$index;
+            (message as any).key = message.key ? message.key.toString("utf8") : message.key;
+            message.value = value;
+        } catch (error) {
+            throw new Error("Cannot determine JSON schema for topic "
+                + topic + ", as it does not contain JSON. " + error.message);
+        }
+
+        try {
+            const schema = toJSONSchema(message);
+            if (!schema) {
+                throw new Error("Empty schema.");
+            }
+
+            return schema;
+        } catch (error) {
+            throw new Error("Failed to create schema for topic " + topic + ", " + error.message);
+        }
+    }
+
     public async analyseJSONSchema(topic: string) {
 
         const earliestMessages = await this.getRangeFromEarliest(topic, 10);
@@ -490,7 +535,7 @@ export class KeyIndexModel {
 
         const startTime = Date.now();
 
-        const result = await this.getOrCreateModel(topic).create(document);
+        const result = await this.getOrCreateModel(topic).create(document, { checkKeys: false });
 
         const duration = Date.now() - startTime;
         this.metrics.set("mongo_keyindex_insert_ms", duration);
@@ -513,6 +558,7 @@ export class KeyIndexModel {
 
         const queryOptions = {
             upsert: true,
+            checkKeys: false,
         };
 
         const result = await this.getOrCreateModel(topic).findOneAndUpdate(query, document, queryOptions).exec();

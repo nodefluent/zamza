@@ -59,6 +59,11 @@ export default class MessageHandler {
         return murmur.v3(value, 0);
     }
 
+    private marshallJSONPayloadToEnsureSafeMongoKeys(payload: any): any {
+        // no "." or "$" or null as key name (fixed in MongoDB > 3.6)
+        return payload;
+    }
+
     public findConfigForTopic(topic: string): TopicConfig | null {
 
         const topicConfigs = this.mongoPoller.getCollected().topicConfigs;
@@ -141,6 +146,11 @@ export default class MessageHandler {
                 alteredMessageValue = message.value;
             }
         }
+
+        /*
+        if (typeof alteredMessageValue === "object" && !Buffer.isBuffer(alteredMessageValue)) {
+            alteredMessageValue = this.marshallJSONPayloadToEnsureSafeMongoKeys(alteredMessageValue);
+        } */
 
         const keyIndex: KeyIndex = {
             key: keyAsString ? this.hash(keyAsString) : null,

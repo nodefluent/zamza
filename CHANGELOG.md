@@ -1,5 +1,10 @@
 # zamza CHANGELOG
 
+## 2019-01-16, Version 0.26.0
+
+* checkKeys disabled for keyindex inserts and upserts
+* new endpoint to build schema on single message for topic (as it can get more detailed)
+
 ## 2019-01-11, Version 0.25.0
 
 * fixed multiple bugs in LockModel
