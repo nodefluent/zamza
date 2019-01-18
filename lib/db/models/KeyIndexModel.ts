@@ -118,6 +118,10 @@ export class KeyIndexModel {
         cleanedMessage.value = message.value;
         cleanedMessage.timestamp = message.timestamp;
 
+        if (typeof cleanedMessage.partition === "undefined") {
+            debug("Parsed cleaned message seems invalid:", JSON.stringify(message));
+        }
+
         return cleanedMessage;
     }
 
@@ -475,11 +479,12 @@ export class KeyIndexModel {
                 if (!value || typeof value !== "object") {
                     return;
                 }
+
+                message.value = value;
             }
 
             delete message.$index;
             (message as any).key = message.key ? message.key.toString("utf8") : message.key;
-            message.value = value;
         } catch (error) {
             throw new Error("Cannot determine JSON schema for topic "
                 + topic + ", as it does not contain JSON. " + error.message);
@@ -522,11 +527,12 @@ export class KeyIndexModel {
                     if (!value || typeof value !== "object") {
                         return;
                     }
+
+                    message.value = value;
                 }
 
                 delete message.$index;
                 message.key = message.key ? message.key.toString("utf8") : message.key;
-                message.value = value;
 
                 parsedAndConsolidatedMessages.push(message);
             } catch (error) {
@@ -557,6 +563,10 @@ export class KeyIndexModel {
 
     public async insert(topic: string, document: KeyIndex): Promise<KeyIndex> {
 
+        if (!document.partition && document.partition !== 0) {
+            throw new Error("Cannot store key index document without partition: " + JSON.stringify(document));
+        }
+
         const startTime = Date.now();
 
         const result = await this.getOrCreateModel(topic).create(document);
@@ -568,6 +578,10 @@ export class KeyIndexModel {
     }
 
     public async upsert(topic: string, document: KeyIndex): Promise<KeyIndex> {
+
+        if (!document.partition && document.partition !== 0) {
+            throw new Error("Cannot store key index document without partition: " + JSON.stringify(document));
+        }
 
         if (!document.key) {
             debug("Cannot upsert message without key.", topic, document.key);

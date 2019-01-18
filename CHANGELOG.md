@@ -1,5 +1,10 @@
 # zamza CHANGELOG
 
+## 2019-01-22, Version 0.31.0
+
+* fixed bug where json schema message values would always be "null"
+* fixed bug in marshalling, where old keys was used to access value for recursive action
+
 ## 2019-01-18, Version 0.28.0 - 0.30.0
 
 * added new query interface to query messages on topics for sub field objects

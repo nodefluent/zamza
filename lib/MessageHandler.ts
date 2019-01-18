@@ -115,7 +115,7 @@ export default class MessageHandler {
             if (changedKey.indexOf("$") !== -1) {
                 oldKey = changedKey;
                 changedKey = changedKey.replace(/\$/g, "_");
-                obj[oldKey] = obj[oldKey];
+                obj[changedKey] = obj[oldKey];
                 delete obj[oldKey];
                 changed = true;
             }
@@ -125,10 +125,10 @@ export default class MessageHandler {
                 const {
                     changed: hasChanged,
                     obj: alteredObj,
-                } = this.marshallJSONPayloadToEnsureSafeMongoKeysRecursive(obj[oldKey]);
+                } = this.marshallJSONPayloadToEnsureSafeMongoKeysRecursive(obj[changedKey]);
 
                 if (hasChanged) {
-                    obj[oldKey] = alteredObj;
+                    obj[changedKey] = alteredObj;
                     changed = true;
                 }
             }
@@ -169,7 +169,7 @@ export default class MessageHandler {
 
         this.metrics.inc("processed_messages");
 
-        if (!message || !message.topic || typeof message.topic !== "string") {
+        if (!message || !message.topic || typeof message.topic !== "string" || typeof message.partition !== "number") {
             debug("Dropping message because of bad format, not an object or no topic", message);
             return false;
         }
