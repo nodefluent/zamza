@@ -4,6 +4,7 @@ import { HttpConfig } from "./HttpConfig";
 
 export interface ZamzaConfig {
     kafka: any;
+    marshallForInvalidCharacters?: boolean;
     discovery: DiscoveryConfig;
     mongo: MongoConfig;
     http: HttpConfig;

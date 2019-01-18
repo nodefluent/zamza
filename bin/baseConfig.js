@@ -59,6 +59,7 @@ module.exports = {
             noBatchCommits: false,
         },
     },
+    marshallForInvalidCharacters: false,
     discovery: {
         enabled: true,
         scanMs: 48000,

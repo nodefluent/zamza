@@ -60,6 +60,7 @@ const zamzaConfig = {
             noBatchCommits: false,
         },
     },
+    marshallForInvalidCharacters: false,
     discovery: {
         enabled: true,
         scanMs: 48000,

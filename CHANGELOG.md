@@ -1,5 +1,11 @@
 # zamza CHANGELOG
 
+## 2019-01-18, Version 0.27.0
+
+* removed checkKeys as it did not work after all
+* added custom marshalling for message payloads to remove dots and dollar signs
+* upgraded dependencies
+
 ## 2019-01-16, Version 0.26.0
 
 * checkKeys disabled for keyindex inserts and upserts

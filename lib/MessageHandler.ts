@@ -32,6 +32,7 @@ export default class MessageHandler {
     private readonly mongoWrapper: MongoWrapper;
     private readonly hooksEnabled: boolean;
     public readonly hooksOnly: boolean;
+    private readonly shouldMarshall: boolean;
 
     constructor(zamza: Zamza) {
         this.mongoPoller = zamza.mongoPoller;
@@ -41,6 +42,8 @@ export default class MessageHandler {
         this.mongoWrapper = zamza.mongoWrapper;
         this.hooksEnabled = zamza.config.hooks ? !!zamza.config.hooks.enabled : false;
         this.hooksOnly = zamza.config.hooks ? !!zamza.config.hooks.only : false;
+        this.shouldMarshall = zamza.config.marshallForInvalidCharacters ? !! zamza.config.marshallForInvalidCharacters
+            : false;
 
         if (this.hooksEnabled) {
             debug("NOTE: Hooks are enabled.");
@@ -59,9 +62,80 @@ export default class MessageHandler {
         return murmur.v3(value, 0);
     }
 
-    private marshallJSONPayloadToEnsureSafeMongoKeys(payload: any): any {
-        // no "." or "$" or null as key name (fixed in MongoDB > 3.6)
-        return payload;
+    private marshallJSONPayloadToEnsureSafeMongoKeysRecursive(obj: any): { changed: boolean, obj: any } {
+
+        // no "." or "$" or null as key name (still not fixed in MongoDB > 3.6, as BSON rejects on mixed type)
+
+        let changed = false;
+        let changedKey = "";
+        let oldKey = "";
+
+        if (Buffer.isBuffer(obj) || obj === null || typeof obj !== "object") {
+            return {
+                changed,
+                obj,
+            };
+        }
+
+        if (Array.isArray(obj)) {
+            obj = obj.map((value) => {
+
+                const {
+                    changed: hasChanged,
+                    obj: alteredObj,
+                } = this.marshallJSONPayloadToEnsureSafeMongoKeysRecursive(value);
+
+                if (hasChanged) {
+                    changed = true;
+                    return alteredObj;
+                } else {
+                    return value;
+                }
+            });
+
+            return {
+                changed,
+                obj,
+            };
+        }
+
+        Object.keys(obj).forEach((key) => {
+            changedKey = key;
+
+            if (changedKey.indexOf(".") !== -1) {
+                oldKey = changedKey;
+                changedKey = changedKey.replace(/\./g, "_");
+                obj[changedKey] = obj[oldKey];
+                delete obj[oldKey];
+                changed = true;
+            }
+
+            if (changedKey.indexOf("$") !== -1) {
+                oldKey = changedKey;
+                changedKey = changedKey.replace(/\$/g, "_");
+                obj[oldKey] = obj[oldKey];
+                delete obj[oldKey];
+                changed = true;
+            }
+
+            if (typeof obj[changedKey] === "object" || Array.isArray(obj[changedKey])) {
+
+                const {
+                    changed: hasChanged,
+                    obj: alteredObj,
+                } = this.marshallJSONPayloadToEnsureSafeMongoKeysRecursive(obj[oldKey]);
+
+                if (hasChanged) {
+                    obj[oldKey] = alteredObj;
+                    changed = true;
+                }
+            }
+        });
+
+        return {
+            changed,
+            obj,
+        };
     }
 
     public findConfigForTopic(topic: string): TopicConfig | null {
@@ -147,10 +221,17 @@ export default class MessageHandler {
             }
         }
 
-        /*
-        if (typeof alteredMessageValue === "object" && !Buffer.isBuffer(alteredMessageValue)) {
-            alteredMessageValue = this.marshallJSONPayloadToEnsureSafeMongoKeys(alteredMessageValue);
-        } */
+        if (this.shouldMarshall && typeof alteredMessageValue === "object" && !Buffer.isBuffer(alteredMessageValue)) {
+
+            const {
+                changed,
+                obj,
+            } = this.marshallJSONPayloadToEnsureSafeMongoKeysRecursive(alteredMessageValue);
+
+            if (changed) {
+                alteredMessageValue = obj;
+            }
+        }
 
         const keyIndex: KeyIndex = {
             key: keyAsString ? this.hash(keyAsString) : null,

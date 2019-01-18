@@ -259,6 +259,15 @@ They will always overwrite the passed configuration file.
 
 The kafka env values will set consumer and producer at the same time.
 
+## FAQ
+
+### I am getting errors for `.` or `$` in my kafka message payloads
+
+MongoDB (actually BSON) does not like object keys that contain `.` or `$` or are `null.`
+You can ask zamza to marshall your messages to replace `.` or `$` with `_` before storing them
+by enabling `config.marshallForInvalidCharacters = true` (default is `false`). Note however that
+this will increase CPU usage.
+
 ## Maintainer
 
 Christian Fröhlingsdorf [@chrisfroeh](https://twitter.com/chrisfroeh)

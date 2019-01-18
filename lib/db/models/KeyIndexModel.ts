@@ -535,7 +535,7 @@ export class KeyIndexModel {
 
         const startTime = Date.now();
 
-        const result = await this.getOrCreateModel(topic).create(document, { checkKeys: false });
+        const result = await this.getOrCreateModel(topic).create(document);
 
         const duration = Date.now() - startTime;
         this.metrics.set("mongo_keyindex_insert_ms", duration);
@@ -558,7 +558,6 @@ export class KeyIndexModel {
 
         const queryOptions = {
             upsert: true,
-            checkKeys: false,
         };
 
         const result = await this.getOrCreateModel(topic).findOneAndUpdate(query, document, queryOptions).exec();
