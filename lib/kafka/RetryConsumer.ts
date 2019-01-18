@@ -51,6 +51,8 @@ export default class RetryConsumer {
             return true;
         } catch (error) {
             debug("Failed to process kafka message, attempt", attempts, "with error", error.message);
+            // reset marshalling, in case error was due to bson insert error
+            this.zamza.messageHandler.resetMarshallStateForTopic(message.topic);
             return (new Promise((resolve) => setTimeout(resolve, attempts * 1000)))
                 .then(() => {
                     return this.processMessageWithRetry(message, attempts);

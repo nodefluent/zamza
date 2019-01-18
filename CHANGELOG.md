@@ -1,5 +1,9 @@
 # zamza CHANGELOG
 
+## 2019-01-18, Version 0.29.0
+
+* adjusted marshalling logic
+
 ## 2019-01-18, Version 0.28.0
 
 * added new query interface to query messages on topics for sub field objects

@@ -161,7 +161,8 @@ export default class MessageHandler {
     }
 
     public resetMarshallStateForTopic(topic: string) {
-        this.topicMarshalling[topic] = false;
+        debug("marshalling has been reset for", topic);
+        delete this.topicMarshalling[topic];
     }
 
     public async handleMessage(message: KafkaMessage, fromStream: boolean = true): Promise<boolean> {
@@ -235,7 +236,7 @@ export default class MessageHandler {
         if (this.shouldMarshall && typeof alteredMessageValue === "object" && !Buffer.isBuffer(alteredMessageValue)) {
 
             // check if marshalling is necessary for this topic
-            if (!this.topicMarshalling[message.topic]) {
+            if (typeof this.topicMarshalling[message.topic] === "undefined") {
 
                 const {
                     changed,
@@ -244,12 +245,17 @@ export default class MessageHandler {
 
                 if (changed) {
                     // marshalling was necessarry for this topic
-                    this.topicMarshalling[message.topic] = false;
+                    debug("Marshalling is necessary for", message.topic);
+                    this.topicMarshalling[message.topic] = true;
                     alteredMessageValue = obj;
                 } else {
                     // does not look like marshalling is necessary for this topic (anymore)
-                    this.topicMarshalling[message.topic] = true;
+                    debug("No marshalling is necessary for", message.topic);
+                    this.topicMarshalling[message.topic] = false;
                 }
+            } else if (this.topicMarshalling[message.topic] === true) {
+                // marshalling is necessary for this topic
+                alteredMessageValue = this.marshallJSONPayloadToEnsureSafeMongoKeysRecursive(alteredMessageValue).obj;
             }
             // else {}
             // marshalling was not necessary for this topic, however if the insert errors
