@@ -420,7 +420,7 @@ export class KeyIndexModel {
         };
     }
 
-    public async findForQuery(query: any, topic: string, limit: number = 256) {
+    public async findForQuery(topic: string, query: any, limit: number = 512) {
 
         if (!query || typeof query !== "object") {
             throw new Error("query must be an object, filtering for 'dot-notated' keys.");

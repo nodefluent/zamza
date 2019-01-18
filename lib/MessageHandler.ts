@@ -162,7 +162,7 @@ export default class MessageHandler {
 
     public resetMarshallStateForTopic(topic: string) {
         debug("marshalling has been reset for", topic);
-        delete this.topicMarshalling[topic];
+        this.topicMarshalling[topic] = true;
     }
 
     public async handleMessage(message: KafkaMessage, fromStream: boolean = true): Promise<boolean> {
