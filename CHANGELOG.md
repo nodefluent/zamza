@@ -1,5 +1,12 @@
 # zamza CHANGELOG
 
+## 2019-01-18, Version 0.28.0
+
+* added new query interface to query messages on topics for sub field objects
+* updated readme quick doc with new options
+* added algorithm to optimize cpu usage of marshalling for topics that do not require marshalling
+* added "/api/info/marshalling" endpoint
+
 ## 2019-01-18, Version 0.27.0
 
 * removed checkKeys as it did not work after all

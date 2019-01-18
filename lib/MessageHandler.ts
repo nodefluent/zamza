@@ -33,6 +33,7 @@ export default class MessageHandler {
     private readonly hooksEnabled: boolean;
     public readonly hooksOnly: boolean;
     private readonly shouldMarshall: boolean;
+    private readonly topicMarshalling: any;
 
     constructor(zamza: Zamza) {
         this.mongoPoller = zamza.mongoPoller;
@@ -44,6 +45,7 @@ export default class MessageHandler {
         this.hooksOnly = zamza.config.hooks ? !!zamza.config.hooks.only : false;
         this.shouldMarshall = zamza.config.marshallForInvalidCharacters ? !! zamza.config.marshallForInvalidCharacters
             : false;
+        this.topicMarshalling = {};
 
         if (this.hooksEnabled) {
             debug("NOTE: Hooks are enabled.");
@@ -154,6 +156,14 @@ export default class MessageHandler {
         return topic.replace(/-/g, "_");
     }
 
+    public getMarshallStates() {
+        return this.topicMarshalling;
+    }
+
+    public resetMarshallStateForTopic(topic: string) {
+        this.topicMarshalling[topic] = false;
+    }
+
     public async handleMessage(message: KafkaMessage, fromStream: boolean = true): Promise<boolean> {
 
         this.metrics.inc("processed_messages");
@@ -221,16 +231,29 @@ export default class MessageHandler {
             }
         }
 
+        // marshalling uses a lot of CPU, thats why we always try to avoid it, if possible
         if (this.shouldMarshall && typeof alteredMessageValue === "object" && !Buffer.isBuffer(alteredMessageValue)) {
 
-            const {
-                changed,
-                obj,
-            } = this.marshallJSONPayloadToEnsureSafeMongoKeysRecursive(alteredMessageValue);
+            // check if marshalling is necessary for this topic
+            if (!this.topicMarshalling[message.topic]) {
 
-            if (changed) {
-                alteredMessageValue = obj;
+                const {
+                    changed,
+                    obj,
+                } = this.marshallJSONPayloadToEnsureSafeMongoKeysRecursive(alteredMessageValue);
+
+                if (changed) {
+                    // marshalling was necessarry for this topic
+                    this.topicMarshalling[message.topic] = false;
+                    alteredMessageValue = obj;
+                } else {
+                    // does not look like marshalling is necessary for this topic (anymore)
+                    this.topicMarshalling[message.topic] = true;
+                }
             }
+            // else {}
+            // marshalling was not necessary for this topic, however if the insert errors
+            // the marshalling state will be removed for the retry
         }
 
         const keyIndex: KeyIndex = {

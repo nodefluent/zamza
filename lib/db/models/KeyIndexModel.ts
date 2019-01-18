@@ -420,6 +420,30 @@ export class KeyIndexModel {
         };
     }
 
+    public async findForQuery(query: any, topic: string, limit: number = 256) {
+
+        if (!query || typeof query !== "object") {
+            throw new Error("query must be an object, filtering for 'dot-notated' keys.");
+        }
+
+        debug("Filtering for", query, "on topic", topic);
+
+        const startTime = Date.now();
+        const messages = await this.getOrCreateModel(topic)
+            .find(query)
+            .limit(limit)
+            .lean()
+            .exec();
+
+        const duration = Date.now() - startTime;
+        this.metrics.set("mongo_keyindex_find_query_ms", duration);
+        debug("Filter for query", query, "on topic", topic, "took", duration, "ms");
+
+        return {
+            results: KeyIndexModel.cleanMessageResultsForResponse(topic, messages),
+        };
+    }
+
     public async getRangeFromLatest(topic: string, range: number = 50) {
         return this.paginateThroughTopic(topic, null, range, -1);
     }

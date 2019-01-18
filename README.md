@@ -146,6 +146,42 @@ If you have configured topics that are sticking to a certain JSON schema for the
 are (as they should be..) produced with full updates of the entities only, you can use the `GET /api/info/schema/:topic/json`
 endpoint to fetch the schema.
 
+### Fetching the detailed JSON schema of a topic (based on a single message)
+
+When fetching JSON schemas on `GET /api/info/schema/:topic/json` zamza will consolidate the schema of the topic based on a few messages
+from earliest and from latest. If there types do not fit 100% intermediate types e.g. object or array might be result in the json schema.
+If you are certain that a topic ships a constant schema you can use `GET /api/info/single-schema/:topic/json` to let zamza build the
+schema based on a single latest message from the given topic.
+
+### Running advanced queries to find messages
+
+Zamza enables you to search for messages in topics based on their payload fields.
+You can pass a query object to `POST /api/fetch/:topic/query/find` 
+body: `{ query: { "value.payload.customer.firstName": "Peter", "value.payload.customer.surName": "Pan" } }`.
+
+Message results will look equal to the other API message responses e.g. pagination.
+For now all queries are limited to 256 messages per request. No Offset can be provided.
+
+Another look at the collection you are querying, for convenience:
+
+```javascript
+const collectionSchema = {
+  key: Number, // hashed
+  timestamp: Number,
+  partition: Number,
+  offset: Number,
+  keyValue: Buffer,
+  value: Mixed,
+  deleteAt: Date,
+  fromStream: Boolean,
+  storedAt: Number,
+};
+```
+
+Please **NOTE**: your searches are will be made on fields that wont have any `indices`,
+therefore these queries might take long (depending on the size of your topics and their configuration).
+Also making a lot of them at the same time, will result in high loads on your MongoDB (cluster).
+
 ### Using Hooks
 
 First of all you will have to enable hooks in the config `config.hooks.enabled`.
@@ -265,8 +301,8 @@ The kafka env values will set consumer and producer at the same time.
 
 MongoDB (actually BSON) does not like object keys that contain `.` or `$` or are `null.`
 You can ask zamza to marshall your messages to replace `.` or `$` with `_` before storing them
-by enabling `config.marshallForInvalidCharacters = true` (default is `false`). Note however that
-this will increase CPU usage.
+by enabling `config.marshallForInvalidCharacters = true` (default is `false`). Please **Note**: however that
+this will increase zamza's CPU usage, a lot.
 
 ## Maintainer
 

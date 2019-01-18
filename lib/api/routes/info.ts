@@ -45,6 +45,8 @@ const routeInfo = (zamza: Zamza) => {
                 "/api/info/metadata",
                 "/api/info/metadata/:topic",
 
+                "/api/info/marshalling",
+
                 "/api/info/schema/:topic/json",
                 "/api/info/single-schema/:topic/json",
             ],
@@ -55,6 +57,17 @@ const routeInfo = (zamza: Zamza) => {
 
         try {
             res.status(200).json(await topicMetadataModel.list());
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
+    });
+
+    router.get("/marshalling", (req, res) => {
+
+        try {
+            res.status(200).json(messageHandler.getMarshallStates());
         } catch (error) {
             res.status(500).json({
                 error: "An error occured " + error.message,
