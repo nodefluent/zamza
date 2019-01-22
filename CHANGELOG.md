@@ -1,6 +1,6 @@
 # zamza CHANGELOG
 
-## 2019-01-22, Version 0.31.0
+## 2019-01-22, Version 0.31.1
 
 * query find operation now supports pagination
 * query find operation now supports count result

@@ -9,14 +9,14 @@ import * as toJSONSchema from "to-json-schema";
 import { KeyIndex, TopicMetadata } from "../../interfaces";
 import Zamza from "../../Zamza";
 import { Metrics } from "../../Metrics";
-import MessageHandler from "../../MessageHandler";
 import Discovery from "../../kafka/Discovery";
+import MessageHandler from "./../../MessageHandler";
 
 export class KeyIndexModel {
 
     public readonly metrics: Metrics;
     public readonly discovery: Discovery;
-    public readonly messageHandler: MessageHandler;
+    public readonly zamza: Zamza;
     public readonly name: string;
     private readonly models: any;
     private mongoose: any;
@@ -25,7 +25,7 @@ export class KeyIndexModel {
     constructor(zamza: Zamza) {
         this.metrics = zamza.metrics;
         this.discovery = zamza.discovery;
-        this.messageHandler = zamza.messageHandler;
+        this.zamza = zamza;
         this.name = "keyindex";
         this.models = {};
         this.mongoose = null;
@@ -45,7 +45,7 @@ export class KeyIndexModel {
     private getOrCreateModel(originalTopic: string) {
 
         const topic = MessageHandler.cleanTopicNameForMetrics(originalTopic);
-        const topicConfig = this.messageHandler.findConfigForTopic(originalTopic);
+        const topicConfig = this.zamza.messageHandler.findConfigForTopic(originalTopic);
         if (!topicConfig) {
             debug("Cannot getOrCreateModel, because no config was found for topic", originalTopic);
             throw new Error("Cannot getOrCreateModel, because no config was found for topic: " + originalTopic);
@@ -452,7 +452,7 @@ export class KeyIndexModel {
     public async findForQuery(topic: string, origQuery: any, limit: number = 512,
                               skipToIndex: string | null = null, order: number = -1, asCount: boolean = false) {
 
-        const topicConfig = this.messageHandler.findConfigForTopic(topic);
+        const topicConfig = this.zamza.messageHandler.findConfigForTopic(topic);
         if (!topicConfig) {
             debug("Cannot findForQuery, because no config was found for topic", topic);
             throw new Error("Cannot findForQuery, because no config was found for topic: " + topic);
