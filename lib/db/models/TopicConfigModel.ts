@@ -100,11 +100,6 @@ export class TopicConfigModel {
             throw new Error("cleanupPolicy 'compact_and_delete' requires retentionMs to be set.");
         }
 
-        // important to create indices before (key index model) topic gets first writes
-        if (this.mongoWrapper) {
-            this.mongoWrapper.getKeyIndex().ensureModelAndIndicesExist(topic);
-        }
-
         const document = {
             topic,
             cleanupPolicy,
@@ -112,6 +107,11 @@ export class TopicConfigModel {
             timestamp,
             queryable,
         };
+
+        // important to create indices before (key index model) topic gets first writes
+        if (this.mongoWrapper) {
+            this.mongoWrapper.getKeyIndex().ensureModelAndIndicesExist(topic, document);
+        }
 
         const query = {
             topic,

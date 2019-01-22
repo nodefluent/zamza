@@ -11,6 +11,7 @@ import Zamza from "../../Zamza";
 import { Metrics } from "../../Metrics";
 import Discovery from "../../kafka/Discovery";
 import MessageHandler from "./../../MessageHandler";
+import { TopicConfig } from "../../interfaces";
 
 export class KeyIndexModel {
 
@@ -38,14 +39,14 @@ export class KeyIndexModel {
         debug("Not creating any model now, as keyindex models are created per topic on the fly.");
     }
 
-    public ensureModelAndIndicesExist(topic: string) {
-        this.getOrCreateModel(topic);
+    public ensureModelAndIndicesExist(topic: string, topicConfig: TopicConfig) {
+        this.getOrCreateModel(topic, topicConfig);
     }
 
-    private getOrCreateModel(originalTopic: string) {
+    private getOrCreateModel(originalTopic: string, unstoredTopicConfig: TopicConfig | null = null) {
 
         const topic = MessageHandler.cleanTopicNameForMetrics(originalTopic);
-        const topicConfig = this.zamza.messageHandler.findConfigForTopic(originalTopic);
+        const topicConfig = unstoredTopicConfig || this.zamza.messageHandler.findConfigForTopic(originalTopic);
         if (!topicConfig) {
             debug("Cannot getOrCreateModel, because no config was found for topic", originalTopic);
             throw new Error("Cannot getOrCreateModel, because no config was found for topic: " + originalTopic);
