@@ -11,7 +11,7 @@ import Zamza from "../Zamza";
 import { HttpConfig } from "../interfaces";
 import { routeRoot, routeTopicConfig, routeInfo,
          routeFetch, routeProduce, routeManage,
-         routeHook, routeReplay } from "./routes";
+         routeHook, routeReplay, routeState } from "./routes";
 
 import AccessControll from "./AccessControll";
 
@@ -94,6 +94,7 @@ export default class HttpServer {
         app.use("/api/fetch", routeFetch(this.zamza));
         app.use("/api/produce", routeProduce(this.zamza));
         app.use("/api/manage", routeManage(this.zamza));
+        app.use("/api/state", routeState(this.zamza));
 
         this.server = await new Promise((resolve, reject) => {
             let server: any = null;

@@ -83,13 +83,15 @@ But it wont start building indices and metadata yet. You will have to configure 
 and processed.
 
 You can do that by providing a small configuraton in a `POST /api/config/topic` call.
-You will have to provide the following information in the body `{ topic, cleanupPolicy, retentionMs? }`.
+You will have to provide the following information in the body `{ topic, cleanupPolicy, retentionMs?, queryable? }`.
 
 * `topic` is the name of the Kafka topic (you can fetch available topics via `GET /api/info/topics/available`)
 * `cleanupPolicy` is the clean up policy of your topic (similiarly configured in the MongoDB backend of zamza)
 allowed values are: `compact` (runs upserts based on you topics keys), `delete` (uses retentionMs to determine a ttl for messages),
 `none` (inserts only, no ttl) or `compact_and_delete` (runs upserts with ttl on retentionMs combined)
 * `retentionMs` ttl for the given messages in milliseconds (either the messages have a timestamp or the time of insertion will be used to determine when to delete a message), messages are deleted via MongoDB's document delete index
+* `queryable` determines if the message values of a topic should be stored as JSON (object structure) or as Buffer (byte array),
+default is `false` which will store it as Buffer, increasing performance; however running queries with the query API will not be possible on such topics
 
 If you configure a topic, it will be consumed from earliest and stored to MongoDB depending on the given configuration by zamza.
 Topics require about 1/2 the storage size in MongoDB (enable compression) that they require in Kafka.
@@ -153,14 +155,18 @@ from earliest and from latest. If there types do not fit 100% intermediate types
 If you are certain that a topic ships a constant schema you can use `GET /api/info/single-schema/:topic/json` to let zamza build the
 schema based on a single latest message from the given topic.
 
-### Running advanced queries to find messages
+### Running advanced queries to find or count messages
 
 Zamza enables you to search for messages in topics based on their payload fields.
 You can pass a query object to `POST /api/fetch/:topic/query/find` 
 body: `{ query: { "value.payload.customer.firstName": "Peter", "value.payload.customer.surName": "Pan" } }`.
 
 Message results will look equal to the other API message responses e.g. pagination.
-For now all queries are limited to 256 messages per request. No Offset can be provided.
+When querying messages you can provide additional parameters to customize your query: 
+
+* `limit` to limit the results, default is 512, cap is 2500 (you can omit this field)
+* `skipToIndex` works exactly like described in the pagination API above, default is null (you can omit this field)
+* `order` order is applied when skipToIndex is used, value can be 1 or -1 (default is -1)
 
 Another look at the collection you are querying, for convenience:
 
@@ -181,6 +187,11 @@ const collectionSchema = {
 Please **NOTE**: your searches are will be made on fields that wont have any `indices`,
 therefore these queries might take long (depending on the size of your topics and their configuration).
 Also making a lot of them at the same time, will result in high loads on your MongoDB (cluster).
+
+#### Counting messages in a topic based on a filter
+
+Using the endpoint `POST /api/fetch/:topic/query/count` (body equals the described find endpoint, however only `query` field can be actually used),
+you can retreive the count of messages spread across topics. Resulting API response will be `{ count: number }`.
 
 ### Using Hooks
 
@@ -234,6 +245,14 @@ and running through all hook subcriptions that are not ignoring replays (config)
 * To check the current lag status on an instance call `GET /api/config/replay/lag`
 * To stop a replay process call `DELETE /api/config/replay/:topic`
 * In case you cannot start new replays due to bad shutdowns call `DELETE /api/config/replay/flushone` on the instance
+
+### Reading metadata information
+
+Zamza collects all kind of metadata while processing your clusters messages, depending on the topic-configuration that you have
+provded of course. You can find these `GET `endpoints by calling `GET /api/info/`.
+However fetching of additional metadata information can be enabled by using the shared state API `POST /api/state/ {key: string, val: string}`.
+Topic (partition) metadata polling e.g. by setting `enable_metadata_job` to `true`. Please *NOTE* that metadata processing runs as job every x minutes
+(depending on your configuration) the queries produce a hefty read load on your MongoDB cluster (ensure to read first from slaves).
 
 ## Setup Info
 

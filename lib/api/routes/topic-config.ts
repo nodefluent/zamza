@@ -82,7 +82,7 @@ const routeTopicConfig = (zamza: Zamza) => {
         }
 
         try {
-            const { topic, cleanupPolicy, retentionMs } = req.body;
+            const { topic, cleanupPolicy, retentionMs, queryable = false } = req.body;
 
             if (topic && topic.startsWith(ZAMZA_TOPIC_PREFIX)) {
                 res.status(400).json({
@@ -99,7 +99,8 @@ const routeTopicConfig = (zamza: Zamza) => {
                 return;
             }
 
-            res.status(202).json(await topicConfigModel.upsert(topic, cleanupPolicy, retentionMs));
+            res.status(202).json(await topicConfigModel.upsert(topic, cleanupPolicy,
+                retentionMs, undefined, queryable));
         } catch (error) {
             res.status(500).json({
                 error: "An error occured " + error.message,
@@ -117,7 +118,7 @@ const routeTopicConfig = (zamza: Zamza) => {
         }
 
         try {
-            const { topic, cleanupPolicy, retentionMs } = req.body;
+            const { topic, cleanupPolicy, retentionMs, queryable = false } = req.body;
 
             if (topic && topic.startsWith(ZAMZA_TOPIC_PREFIX)) {
                 res.status(400).json({
@@ -126,7 +127,8 @@ const routeTopicConfig = (zamza: Zamza) => {
                 return;
             }
 
-            res.status(202).json(await topicConfigModel.upsert(topic, cleanupPolicy, retentionMs));
+            res.status(202).json(await topicConfigModel.upsert(topic, cleanupPolicy,
+                retentionMs, undefined, queryable));
         } catch (error) {
             res.status(500).json({
                 error: "An error occured " + error.message,
@@ -154,13 +156,13 @@ const routeTopicConfig = (zamza: Zamza) => {
 
             await Promise.map(req.body.topics, ((topicConfig: any) => {
 
-                const { topic, cleanupPolicy, retentionMs } = topicConfig;
+                const { topic, cleanupPolicy, retentionMs, queryable = false } = topicConfig;
 
                 if (topic && topic.startsWith(ZAMZA_TOPIC_PREFIX)) {
                     throw new Error("Cannot do that for a zamza internal topic, " + topic);
                 }
 
-                return topicConfigModel.upsert(topic, cleanupPolicy, retentionMs);
+                return topicConfigModel.upsert(topic, cleanupPolicy, retentionMs, undefined, queryable);
             }), {concurrency: 1});
 
             res.status(200).json(await topicConfigModel.list());

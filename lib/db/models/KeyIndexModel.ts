@@ -16,6 +16,7 @@ export class KeyIndexModel {
 
     public readonly metrics: Metrics;
     public readonly discovery: Discovery;
+    public readonly messageHandler: MessageHandler;
     public readonly name: string;
     private readonly models: any;
     private mongoose: any;
@@ -24,6 +25,7 @@ export class KeyIndexModel {
     constructor(zamza: Zamza) {
         this.metrics = zamza.metrics;
         this.discovery = zamza.discovery;
+        this.messageHandler = zamza.messageHandler;
         this.name = "keyindex";
         this.models = {};
         this.mongoose = null;
@@ -43,6 +45,11 @@ export class KeyIndexModel {
     private getOrCreateModel(originalTopic: string) {
 
         const topic = MessageHandler.cleanTopicNameForMetrics(originalTopic);
+        const topicConfig = this.messageHandler.findConfigForTopic(originalTopic);
+        if (!topicConfig) {
+            debug("Cannot getOrCreateModel, because no config was found for topic", originalTopic);
+            throw new Error("Cannot getOrCreateModel, because no config was found for topic: " + originalTopic);
+        }
 
         if (this.models[topic]) {
             return this.models[topic];
@@ -54,7 +61,7 @@ export class KeyIndexModel {
             partition: Number,
             offset: Number,
             keyValue: Buffer,
-            value: mongoose.Schema.Types.Mixed,
+            value: topicConfig.queryable ? mongoose.Schema.Types.Mixed : Buffer,
             deleteAt: Date,
             fromStream: Boolean,
             storedAt: Number,
@@ -129,6 +136,24 @@ export class KeyIndexModel {
         return messages.map((message) => {
             return KeyIndexModel.cleanMessageResultForResponse(topic, message);
         });
+    }
+
+    public async getSimpleCountOfMessagesStoredForTopic(topic: string, fromMetadata: boolean = true): Promise<number> {
+
+        const startTime = Date.now();
+
+        const model = this.getOrCreateModel(topic);
+        let count = -1;
+        if (fromMetadata) {
+            count = await model.estimatedDocumentCount();
+        } else {
+            count = await model.countDocuments({});
+        }
+
+        const duration = Date.now() - startTime;
+        this.metrics.set(`mongo_keyindex_simple_count_${fromMetadata ? "m" : "c"}_ms`, duration);
+
+        return count;
     }
 
     public async getMetadataForTopic(topic: string): Promise<TopicMetadata> {
@@ -424,28 +449,103 @@ export class KeyIndexModel {
         };
     }
 
-    public async findForQuery(topic: string, query: any, limit: number = 512) {
+    public async findForQuery(topic: string, origQuery: any, limit: number = 512,
+                              skipToIndex: string | null = null, order: number = -1, asCount: boolean = false) {
 
-        if (!query || typeof query !== "object") {
+        const topicConfig = this.messageHandler.findConfigForTopic(topic);
+        if (!topicConfig) {
+            debug("Cannot findForQuery, because no config was found for topic", topic);
+            throw new Error("Cannot findForQuery, because no config was found for topic: " + topic);
+        }
+
+        if (!topicConfig.queryable) {
+            debug("Cannot run query for topic", topic, "because it is not configured as queryable.", topicConfig);
+            throw new Error("Cannot run query for topic " + topic + " because it is not configured as queryable.");
+        }
+
+        // order
+        // 1 = ascending = earliest
+        // -1 = descending = latest
+
+        if (!origQuery || typeof origQuery !== "object") {
             throw new Error("query must be an object, filtering for 'dot-notated' keys.");
         }
 
-        debug("Filtering for", query, "on topic", topic);
+        if (limit > 2500) {
+            throw new Error(limit + " is a huge limit size, please stay under 2500 per call.");
+        }
 
-        const startTime = Date.now();
-        const messages = await this.getOrCreateModel(topic)
-            .find(query)
-            .limit(limit)
-            .lean()
-            .exec();
+        const queryId = topic + "_" +
+            this.hash(`${Object.keys(origQuery).join("")}${limit}${skipToIndex}${order}${asCount}`);
 
-        const duration = Date.now() - startTime;
-        this.metrics.set("mongo_keyindex_find_query_ms", duration);
-        debug("Filter for query", query, "on topic", topic, "took", duration, "ms");
+        debug(queryId, "filtering for", origQuery,
+            "on topic", topic, "limit", limit, "skipToIndex", skipToIndex, "order", order);
 
-        return {
-            results: KeyIndexModel.cleanMessageResultsForResponse(topic, messages),
-        };
+        if (skipToIndex && asCount) {
+            debug(queryId, "you provided skipToIndex as well as asCount for a query,",
+            "both is not possible, skipToIndex will be ignored.");
+        }
+
+        let addSort = false;
+        const query = {...origQuery};
+        if (skipToIndex && skipToIndex !== "null" && !asCount) {
+
+            // use last object id to find cursor, its a million times faster
+            // than using .skip() which does not use an index
+            let objectIdIndex = null;
+            try {
+                objectIdIndex = mongoose.Types.ObjectId(skipToIndex);
+                if (!mongoose.Types.ObjectId.isValid(objectIdIndex)) {
+                    throw new Error("Invalid ObjectID");
+                }
+            } catch (error) {
+                throw new Error("Provided skipToIndex is not a valid ObjectId: " + skipToIndex + ", " + error.message);
+            }
+
+            if (query._id) {
+                debug(queryId,
+                    "you provided '_id' in your query, but you also use skipToIndex, _id has been overwritten.");
+            }
+
+            query._id = { [order === 1 ? "$gt" : "$lt"]: objectIdIndex };
+            addSort = true;
+        }
+
+        if (asCount) {
+            const startTime = Date.now();
+            const count = await this.getOrCreateModel(topic).count(query);
+            const duration = Date.now() - startTime;
+            this.metrics.set("mongo_keyindex_find_query_count_ms", duration);
+            debug(queryId, "filter (count) for query", query, "on topic", topic, "took", duration, "ms");
+
+            return {
+                count,
+            };
+
+        } else {
+
+            const cursor = this.getOrCreateModel(topic).find(query);
+
+            if (addSort) {
+                cursor
+                    .sort({ _id: order });
+            }
+
+            cursor
+                .limit(limit)
+                .lean();
+
+            const startTime = Date.now();
+            const messages = await cursor.exec();
+            const duration = Date.now() - startTime;
+
+            this.metrics.set("mongo_keyindex_find_query_ms", duration);
+            debug(queryId, "filter for query", query, "on topic", topic, "took", duration, "ms");
+
+            return {
+                results: KeyIndexModel.cleanMessageResultsForResponse(topic, messages),
+            };
+        }
     }
 
     public async getRangeFromLatest(topic: string, range: number = 50) {

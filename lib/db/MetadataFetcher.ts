@@ -5,7 +5,7 @@ import * as Bluebird from "bluebird";
 import MongoWrapper from "./MongoWrapper";
 
 import { Metrics } from "../Metrics";
-import { LockModel, TopicMetadataModel, TopicConfigModel, KeyIndexModel } from "./models";
+import { LockModel, TopicMetadataModel, TopicConfigModel, KeyIndexModel, StateModel, STATE_KEYS } from "./models";
 
 export default class MetadataFetcher {
 
@@ -14,6 +14,7 @@ export default class MetadataFetcher {
     private readonly keyIndexModel: KeyIndexModel;
     private readonly lockModel: LockModel;
     private readonly topicMetadataModel: TopicMetadataModel;
+    private readonly sharedStateModel: StateModel;
     private intv: any;
 
     constructor(mongoWrapper: MongoWrapper, metrics: Metrics) {
@@ -22,6 +23,7 @@ export default class MetadataFetcher {
         this.keyIndexModel = mongoWrapper.getKeyIndex();
         this.lockModel = mongoWrapper.getLock();
         this.topicMetadataModel = mongoWrapper.getTopicMetadata();
+        this.sharedStateModel = mongoWrapper.getSharedState();
         this.metrics = metrics;
         this.intv = null;
     }
@@ -55,6 +57,17 @@ export default class MetadataFetcher {
     private async onInterval() {
 
         this.metrics.inc("job_metadata_ran");
+
+        // if this is a new setup, reset to false by default
+        let shouldRun = await this.sharedStateModel.get(STATE_KEYS.ENABLE_METADATA_JOB);
+        if (!shouldRun) {
+            shouldRun = await this.sharedStateModel.set(STATE_KEYS.ENABLE_METADATA_JOB, "false");
+        }
+
+        if (shouldRun !== "true") {
+            debug("Wont run metadata job, as its shared state value is not 'true': ", shouldRun);
+            return;
+        }
 
         const startTime = Date.now();
 

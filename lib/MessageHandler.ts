@@ -193,6 +193,13 @@ export default class MessageHandler {
             throw new Error("MongoDB connection is not established.");
         }
 
+        const topicConfig = this.findConfigForTopic(message.topic);
+        if (!topicConfig) {
+            this.metrics.inc("processed_messages_failed_no_config");
+            debug("Cannot process message, because no config was found for topic", message.topic);
+            return false;
+        }
+
         const startTime = Date.now();
         let keyAsBuffer: Buffer | null = null;
         let keyAsString: string | null = null;
@@ -215,8 +222,9 @@ export default class MessageHandler {
         // try to strip the value as raw, yet parsed as possible before storing
         // happy path here is to turn a message buffer into its JSON object and store as such
         // in case the value does not contain a JSON payload, it should be stored as RAW (message.value) representative
+        // NOTE: Also check if topic shold be queryable, otherwise message value should be stored as buffer
         let alteredMessageValue = null;
-        if (message.value) {
+        if (message.value && topicConfig.queryable) {
 
             if (Buffer.isBuffer(message.value)) {
                 alteredMessageValue = message.value.toString("utf8");
@@ -231,9 +239,21 @@ export default class MessageHandler {
                 alteredMessageValue = message.value;
             }
         }
+        // elif - always ensure we store value as buffer
+        if (message.value && !topicConfig.queryable) {
+            if (Buffer.isBuffer(message.value)) {
+                alteredMessageValue = message.value;
+            } else {
+                if (typeof message.value !== "string") {
+                    alteredMessageValue = Buffer.from(JSON.stringify(message.value));
+                } else {
+                    alteredMessageValue = Buffer.from(message.value);
+                }
+            }
+        }
 
         // marshalling uses a lot of CPU, thats why we always try to avoid it, if possible
-        if (this.shouldMarshall && typeof alteredMessageValue === "object" && !Buffer.isBuffer(alteredMessageValue)) {
+        if (this.shouldMarshall && !Buffer.isBuffer(alteredMessageValue) && typeof alteredMessageValue === "object") {
 
             // check if marshalling is necessary for this topic
             if (typeof this.topicMarshalling[message.topic] === "undefined") {
@@ -273,13 +293,6 @@ export default class MessageHandler {
             fromStream,
             storedAt: timeOfStoring,
         };
-
-        const topicConfig = this.findConfigForTopic(message.topic);
-        if (!topicConfig) {
-            this.metrics.inc("processed_messages_failed_no_config");
-            debug("Cannot process message, because no config was found for topic", message.topic);
-            return false;
-        }
 
         // make sure to run config check first, to ensure the topic can be processed
         // configuation determines that we do not persist messages in MongoDB and only process them as potential hooks

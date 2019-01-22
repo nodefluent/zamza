@@ -29,6 +29,7 @@ export class TopicConfigModel {
             cleanupPolicy: String,
             retentionMs: Number,
             timestamp: Number,
+            queryable: Boolean,
         };
 
         const schema = new schemaConstructor(schemaDefinition);
@@ -67,6 +68,7 @@ export class TopicConfigModel {
                     cleanupPolicy: topicConfig.cleanupPolicy,
                     retentionMs: topicConfig.retentionMs,
                     timestamp: topicConfig.timestamp,
+                    queryable: topicConfig.queryable,
                 };
 
                 return responseTopicConfig;
@@ -75,7 +77,7 @@ export class TopicConfigModel {
     }
 
     public upsert(topic: string, cleanupPolicy: string, retentionMs: number,
-                  timestamp: number = Date.now()): Promise<TopicConfig> {
+                  timestamp: number = Date.now(), queryable: boolean = false): Promise<TopicConfig> {
 
         if (ALLOWED_POLICIES.indexOf(cleanupPolicy) === -1) {
             throw new Error("cleanupPolicy not allowed, choose the one of the following: "
@@ -108,6 +110,7 @@ export class TopicConfigModel {
             cleanupPolicy,
             retentionMs,
             timestamp,
+            queryable,
         };
 
         const query = {

@@ -9,7 +9,7 @@ import * as Models from "./models";
 import Zamza from "../Zamza";
 import { KeyIndexModel, TopicConfigModel,
         TopicMetadataModel, LockModel,
-        HookModel, ReplayModel } from "./models";
+        HookModel, ReplayModel, StateModel } from "./models";
 
 export default class MongoWrapper {
 
@@ -31,6 +31,11 @@ export default class MongoWrapper {
         Object.keys(Models)
         .map((key: string) => (Models as any)[key])
         .forEach((modelConstructor) => {
+
+            if (modelConstructor.noModel) {
+                return;
+            }
+
             const model = new modelConstructor(zamza, this);
             model.registerModel(mongoose, Schema);
             this.models[model.name] = model;
@@ -126,6 +131,10 @@ export default class MongoWrapper {
 
     public getReplay(): ReplayModel {
         return this.models.replay;
+    }
+
+    public getSharedState(): StateModel {
+        return this.models.state;
     }
 
     public close() {

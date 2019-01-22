@@ -2,6 +2,21 @@
 
 ## 2019-01-22, Version 0.31.0
 
+* query find operation now supports pagination
+* query find operation now supports count result
+* query find operation now always dynamic limit
+* query find operation now supports order parameter
+* added new operation to get message count for queried messages
+* updated documentation for updated query API
+* **BREAKING** added 'queryable' as new field for topic configurations to manage message value storage as buffer or json on 
+a per topic basis
+* new API endpoint to fetch simple count `GET /metadata/:topic/count`
+* new API endpoints to manage shared state `/state/..`
+* added new state `enable_metadata_job` to control metadata fetching job **BREAKING** default is false
+* updated documentation for new state stuff on metadata polling
+
+## 2019-01-21, Version 0.31.0
+
 * fixed bug where json schema message values would always be "null"
 * fixed bug in marshalling, where old keys was used to access value for recursive action
 

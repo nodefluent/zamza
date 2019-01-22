@@ -44,6 +44,7 @@ const routeInfo = (zamza: Zamza) => {
 
                 "/api/info/metadata",
                 "/api/info/metadata/:topic",
+                "/api/info/metadata/:topic/count",
 
                 "/api/info/marshalling",
 
@@ -98,6 +99,31 @@ const routeInfo = (zamza: Zamza) => {
             } else {
                 res.status(200).json(topicMetadata);
             }
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
+    });
+
+    router.get("/metadata/:topic/count", async (req, res) => {
+
+        const {topic} = req.params;
+        const {fromMetadata = true} = req.query;
+
+        try {
+
+            const topicConfig = messageHandler.findConfigForTopic(topic);
+            if (!topicConfig) {
+                res.status(400).json({
+                    error: "Topic metadata can only be provided for configured topics." +
+                        " Please wait a few seconds after configuring a topic.",
+                });
+                return;
+            }
+
+            const count = await keyIndexModel.getSimpleCountOfMessagesStoredForTopic(topic);
+            res.status(200).json({ count });
         } catch (error) {
             res.status(500).json({
                 error: "An error occured " + error.message,

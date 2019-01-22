@@ -3,4 +3,5 @@ export interface TopicConfig {
     cleanupPolicy: string;
     retentionMs: number;
     timestamp: number;
+    queryable?: boolean;
 }
