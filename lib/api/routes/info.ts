@@ -47,6 +47,7 @@ const routeInfo = (zamza: Zamza) => {
                 "/api/info/metadata/:topic/count",
 
                 "/api/info/marshalling",
+                "/api/info/queries",
 
                 "/api/info/schema/:topic/json",
                 "/api/info/single-schema/:topic/json",
@@ -69,6 +70,17 @@ const routeInfo = (zamza: Zamza) => {
 
         try {
             res.status(200).json(messageHandler.getMarshallStates());
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
+    });
+
+    router.get("/queries", (req, res) => {
+
+        try {
+            res.status(200).json(zamza.mongoWrapper.balrok.getRunningQueries());
         } catch (error) {
             res.status(500).json({
                 error: "An error occured " + error.message,
