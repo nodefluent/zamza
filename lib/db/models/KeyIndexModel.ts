@@ -5,6 +5,7 @@ import * as moment from "moment";
 import * as mongoose from "mongoose";
 import * as Bluebird from "bluebird";
 import * as toJSONSchema from "to-json-schema";
+import * as R from "ramda";
 
 import { KeyIndex, TopicMetadata } from "../../interfaces";
 import Zamza from "../../Zamza";
@@ -505,11 +506,22 @@ export class KeyIndexModel {
             query._id = { [order === 1 ? "$gt" : "$lt"]: objectIdIndex };
         }
 
+        const queryFilter = R.allPass(Object.keys(query).map((key: string) => {
+
+            if (key.indexOf("[") !== -1 || key.indexOf("]") !== -1) {
+                throw new Error("Character not allowed in query key [], only dot strings as path allowed.");
+            }
+
+            if (Array.isArray(query[key]) || (typeof query[key] === "object" && query[key] !== null)) {
+                throw new Error(
+                    "Query field values, must not be arrays or objects, please resolve via flat string paths. " + key);
+            }
+
+            return R.pathEq(key.split("."), query[key]);
+        }));
+
         const documentOperation = (doc: any) => {
-            return {
-                keep: true,
-                result: doc,
-            };
+            return queryFilter(doc);
         };
 
         const resolveOptions = {
@@ -524,7 +536,7 @@ export class KeyIndexModel {
         const startTime = Date.now();
 
         const messages: any = await this.zamza
-            .mongoWrapper.balrok.resolve(this.getOrCreateModel(topic), query, documentOperation, resolveOptions);
+            .mongoWrapper.balrok.filter(this.getOrCreateModel(topic), {}, documentOperation, resolveOptions);
 
         const duration = Date.now() - startTime;
         this.metrics.set("mongo_keyindex_find_query_ms", duration);

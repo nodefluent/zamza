@@ -101,6 +101,11 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-10.12.18.tgz#1d3ca764718915584fcd9f6344621b7672665c67"
   integrity sha512-fh+pAqt4xRzPfqA6eh3Z2y6fyZavRIumvjhaCL753+TVkGKGhpPeyrJG2JftD0T9q4GF00KjefsQ+PQNDdWQaQ==
 
+"@types/ramda@^0.25.47":
+  version "0.25.47"
+  resolved "https://registry.yarnpkg.com/@types/ramda/-/ramda-0.25.47.tgz#904f2ee46149af42902fe7dc01867e32798e8b37"
+  integrity sha512-+ffSU83+PR4/cZtNTkUcFkg70sK4GePle7p5h05bQ37ycPumOx/TBpU52bt36GKDlds6tCqXheqPvgC52MMLug==
+
 "@types/range-parser@*":
   version "1.2.3"
   resolved "https://registry.yarnpkg.com/@types/range-parser/-/range-parser-1.2.3.tgz#7ee330ba7caafb98090bece86a5ee44115904c2c"
@@ -254,10 +259,10 @@ balanced-match@^1.0.0:
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.0.tgz#89b4d199ab2bee49de164ea02b89ce462d71b767"
   integrity sha1-ibTRmasr7kneFk6gK4nORi1xt2c=
 
-balrok@^1.1.1:
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/balrok/-/balrok-1.1.1.tgz#49bd283c9d0cbcfc46f35fb22d91de2721e62aec"
-  integrity sha512-z0+mmlz6aZUQqOT48FzCqtUPWkeeyN2crCzZnMdctK0dIt0+ibI8PL4eqqhmnS0YQ25P7aQu1Mg4ggb1LPtXjw==
+balrok@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/balrok/-/balrok-1.2.0.tgz#11ab89e44ab89d746cda811fbf26cd1b404175cc"
+  integrity sha512-xnL4LfBQiHr436/EbGhdi5R9/jvU/7P3HODqtiy7mEAsYXqeREJNs6hGFITJ6lyT26TzsBvACPvDTlvt19/KRQ==
   dependencies:
     debug "^4.1.1"
     moment "^2.24.0"
@@ -1394,6 +1399,11 @@ qs@6.5.2, qs@~6.5.2:
   version "6.5.2"
   resolved "https://registry.yarnpkg.com/qs/-/qs-6.5.2.tgz#cb3ae806e8740444584ef154ce8ee98d403f3e36"
   integrity sha512-N5ZAX4/LxJmF+7wN74pUD6qAh9/wnvdQcjq9TZjevvXzSUo7bfmw91saqMjzGS2xq91/odN2dW/WOl7qQHNDGA==
+
+ramda@^0.26.1:
+  version "0.26.1"
+  resolved "https://registry.yarnpkg.com/ramda/-/ramda-0.26.1.tgz#8d41351eb8111c55353617fc3bbffad8e4d35d06"
+  integrity sha512-hLWjpy7EnsDBb0p+Z3B7rPi3GDeRG5ZtiI33kJhTt+ORCd38AbAIjB/9zRIUoeTbE/AVX5ZkU7m6bznsvrf8eQ==
 
 range-parser@~1.2.0:
   version "1.2.0"
