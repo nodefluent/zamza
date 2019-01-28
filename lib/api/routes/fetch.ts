@@ -207,7 +207,7 @@ const routeFetch = (zamza: Zamza) => {
         }
 
         try {
-            res.status(200).json(await keyIndexModel.findForQuery(topic, query, limit, skipToIndex, order, false));
+            res.status(200).json(await keyIndexModel.findForQuery(topic, query, limit, skipToIndex, order));
         } catch (error) {
             res.status(500).json({
                 error: "An error occured " + error.message,
@@ -228,7 +228,9 @@ const routeFetch = (zamza: Zamza) => {
         }
 
         try {
-            res.status(200).json(await keyIndexModel.findForQuery(topic, query, 0, null, 0, true));
+            res.status(405).json({
+                error: "Not implemented",
+            });
         } catch (error) {
             res.status(500).json({
                 error: "An error occured " + error.message,

@@ -451,7 +451,7 @@ export class KeyIndexModel {
     }
 
     public async findForQuery(topic: string, origQuery: any, limit: number = 512,
-                              skipToIndex: string | null = null, order: number = -1, asCount: boolean = false) {
+                              skipToIndex: string | null = null, order: number = -1) {
 
         const topicConfig = this.zamza.messageHandler.findConfigForTopic(topic);
         if (!topicConfig) {
@@ -477,19 +477,13 @@ export class KeyIndexModel {
         }
 
         const queryId = topic + "_" +
-            this.hash(`${Object.keys(origQuery).join("")}${limit}${skipToIndex}${order}${asCount}`);
+            this.hash(`${Object.keys(origQuery).join("")}${limit}${skipToIndex}${order}`);
 
         debug(queryId, "filtering for", origQuery,
             "on topic", topic, "limit", limit, "skipToIndex", skipToIndex, "order", order);
 
-        if (skipToIndex && asCount) {
-            debug(queryId, "you provided skipToIndex as well as asCount for a query,",
-            "both is not possible, skipToIndex will be ignored.");
-        }
-
-        let addSort = false;
         const query = {...origQuery};
-        if (skipToIndex && skipToIndex !== "null" && !asCount) {
+        if (skipToIndex && skipToIndex !== "null") {
 
             // use last object id to find cursor, its a million times faster
             // than using .skip() which does not use an index
@@ -509,44 +503,36 @@ export class KeyIndexModel {
             }
 
             query._id = { [order === 1 ? "$gt" : "$lt"]: objectIdIndex };
-            addSort = true;
         }
 
-        if (asCount) {
-            const startTime = Date.now();
-            const count = await this.getOrCreateModel(topic).count(query);
-            const duration = Date.now() - startTime;
-            this.metrics.set("mongo_keyindex_find_query_count_ms", duration);
-            debug(queryId, "filter (count) for query", query, "on topic", topic, "took", duration, "ms");
-
+        const documentOperation = (doc: any) => {
             return {
-                count,
+                keep: true,
+                result: doc,
             };
+        };
 
-        } else {
+        const resolveOptions = {
+            options: {},
+            batchSize: 1024,
+            order,
+            timeoutMs: 55000,
+            dontAwait: false,
+            noCache: false,
+        };
 
-            const cursor = this.getOrCreateModel(topic).find(query);
+        const startTime = Date.now();
 
-            if (addSort) {
-                cursor
-                    .sort({ _id: order });
-            }
+        const messages: any = await this.zamza
+            .mongoWrapper.balrok.resolve(this.getOrCreateModel(topic), query, documentOperation, resolveOptions);
 
-            cursor
-                .limit(limit)
-                .lean();
+        const duration = Date.now() - startTime;
+        this.metrics.set("mongo_keyindex_find_query_ms", duration);
+        debug(queryId, "filter for query", query, "on topic", topic, "took", duration, "ms");
 
-            const startTime = Date.now();
-            const messages = await cursor.exec();
-            const duration = Date.now() - startTime;
-
-            this.metrics.set("mongo_keyindex_find_query_ms", duration);
-            debug(queryId, "filter for query", query, "on topic", topic, "took", duration, "ms");
-
-            return {
-                results: KeyIndexModel.cleanMessageResultsForResponse(topic, messages),
-            };
-        }
+        return {
+            results: KeyIndexModel.cleanMessageResultsForResponse(topic, messages),
+        };
     }
 
     public async getRangeFromLatest(topic: string, range: number = 50) {

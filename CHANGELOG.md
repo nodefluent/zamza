@@ -1,6 +1,11 @@
 # zamza CHANGELOG
 
-## 2019-01-22, Version 0.31.2
+## 2019-01-28, Version 0.33.0
+
+* replaced un-index query for querable tables with balroks heavy lifting logic
+* **BREAKING** `/:topic/query/count` is currently disabled
+
+## 2019-01-22, Version 0.32.2
 
 * query find operation now supports pagination
 * query find operation now supports count result

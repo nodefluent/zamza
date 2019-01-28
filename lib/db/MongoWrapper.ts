@@ -3,6 +3,7 @@ const debug = Debug("zamza:mongo");
 
 import * as mongoose from "mongoose";
 const Schema = mongoose.Schema;
+import Balrok from "balrok";
 
 import { MongoConfig } from "../interfaces";
 import * as Models from "./models";
@@ -15,11 +16,18 @@ export default class MongoWrapper {
 
     private readonly config: MongoConfig;
     private readonly models: any;
+    public readonly balrok: Balrok;
 
     constructor(config: MongoConfig, zamza: Zamza) {
         this.config = config;
         this.models = {};
         this.loadModels(zamza);
+
+        this.balrok = new Balrok({
+            cacheCollectionName: "zamza_heavy_lifting",
+            cacheTimeMs: 60 * 1000 * 10,
+            maxParallelProcesses: 4,
+        });
 
         mongoose.set("bufferCommands", false);
         mongoose.set("useCreateIndex", true);
@@ -106,6 +114,7 @@ export default class MongoWrapper {
 
     public async start() {
         await this.connect();
+        await this.balrok.init();
         return this.isConnected();
     }
 
