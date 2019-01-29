@@ -96,10 +96,15 @@
   resolved "https://registry.yarnpkg.com/@types/murmurhash/-/murmurhash-0.0.1.tgz#564a85100cb16eeec43218a09b08cd87da076afc"
   integrity sha512-jiYuTCJ60WxEDOkJFs2192G/nH0PY8mtyHeZkv5fOQQ5DkSkmEgY7YLzCxyM8Y8jibd8Dprb9bGth4EO34mAjw==
 
-"@types/node@*", "@types/node@~10.12.18":
+"@types/node@*":
   version "10.12.18"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-10.12.18.tgz#1d3ca764718915584fcd9f6344621b7672665c67"
   integrity sha512-fh+pAqt4xRzPfqA6eh3Z2y6fyZavRIumvjhaCL753+TVkGKGhpPeyrJG2JftD0T9q4GF00KjefsQ+PQNDdWQaQ==
+
+"@types/node@~10.12.19":
+  version "10.12.19"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-10.12.19.tgz#ca1018c26be01f07e66ac7fefbeb6407e4490c61"
+  integrity sha512-2NVovndCjJQj6fUUn9jCgpP4WSqr+u1SoUZMZyJkhGeBFsm6dE46l31S7lPUYt9uQ28XI+ibrJA1f5XyH5HNtA==
 
 "@types/ramda@^0.25.47":
   version "0.25.47"
@@ -259,10 +264,10 @@ balanced-match@^1.0.0:
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.0.tgz#89b4d199ab2bee49de164ea02b89ce462d71b767"
   integrity sha1-ibTRmasr7kneFk6gK4nORi1xt2c=
 
-balrok@^1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/balrok/-/balrok-1.2.0.tgz#11ab89e44ab89d746cda811fbf26cd1b404175cc"
-  integrity sha512-xnL4LfBQiHr436/EbGhdi5R9/jvU/7P3HODqtiy7mEAsYXqeREJNs6hGFITJ6lyT26TzsBvACPvDTlvt19/KRQ==
+balrok@^1.3.0:
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/balrok/-/balrok-1.3.0.tgz#e01984337fd8d0c0776b810112d9a15d571565ad"
+  integrity sha512-C5NGB8CHEyoTfqZdfTVgLz5YDteHBzQkj7ZDHn9rLX9/TUPswArC0I1yORJnayA9UiJqrRaUT3/thL0AC7D+EA==
   dependencies:
     debug "^4.1.1"
     moment "^2.24.0"

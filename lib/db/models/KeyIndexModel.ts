@@ -451,8 +451,12 @@ export class KeyIndexModel {
         };
     }
 
-    public async findForQuery(topic: string, origQuery: any, limit: number = 512,
-                              skipToIndex: string | null = null, order: number = -1) {
+    public getResultsForQueryWithCacheKey(cacheKey: number) {
+        return this.zamza.mongoWrapper.balrok.getCacheKeyResult(cacheKey);
+    }
+
+    public async filterForQuery(topic: string, origQuery: any, limit: number = 512,
+                                skipToIndex: string | null = null, order: number = -1, dontAwait: boolean = false) {
 
         const topicConfig = this.zamza.messageHandler.findConfigForTopic(topic);
         if (!topicConfig) {
@@ -473,8 +477,8 @@ export class KeyIndexModel {
             throw new Error("query must be an object, filtering for 'dot-notated' keys.");
         }
 
-        if (limit > 2500) {
-            throw new Error(limit + " is a huge limit size, please stay under 2500 per call.");
+        if (limit > 10500) {
+            throw new Error(limit + " is a huge limit size, please stay under 10500 per call.");
         }
 
         const queryId = topic + "_" +
@@ -483,7 +487,8 @@ export class KeyIndexModel {
         debug(queryId, "filtering for", origQuery,
             "on topic", topic, "limit", limit, "skipToIndex", skipToIndex, "order", order);
 
-        const query = {...origQuery};
+        // start with a clean query, as we are only allowed to pass indexed fields here
+        const query: any = {};
         if (skipToIndex && skipToIndex !== "null") {
 
             // use last object id to find cursor, its a million times faster
@@ -498,15 +503,15 @@ export class KeyIndexModel {
                 throw new Error("Provided skipToIndex is not a valid ObjectId: " + skipToIndex + ", " + error.message);
             }
 
-            if (query._id) {
-                debug(queryId,
-                    "you provided '_id' in your query, but you also use skipToIndex, _id has been overwritten.");
-            }
-
             query._id = { [order === 1 ? "$gt" : "$lt"]: objectIdIndex };
         }
 
-        const queryFilter = R.allPass(Object.keys(query).map((key: string) => {
+        // to prevent caching
+        let queryName = "";
+
+        // based on the query object, we build a Ramda function that can be used to evaluate
+        // documents in the documentOperation call that we pass to balrok
+        const queryFilter = R.allPass(Object.keys(origQuery).map((key: string) => {
 
             if (key.indexOf("[") !== -1 || key.indexOf("]") !== -1) {
                 throw new Error("Character not allowed in query key [], only dot strings as path allowed.");
@@ -517,6 +522,7 @@ export class KeyIndexModel {
                     "Query field values, must not be arrays or objects, please resolve via flat string paths. " + key);
             }
 
+            queryName += key + ",";
             return R.pathEq(key.split("."), query[key]);
         }));
 
@@ -526,17 +532,28 @@ export class KeyIndexModel {
 
         const resolveOptions = {
             options: {},
-            batchSize: 1024,
+            batchSize: 2048,
             order,
-            timeoutMs: 55000,
-            dontAwait: false,
+            timeoutMs: 58000,
+            dontAwait,
             noCache: false,
+            limit,
         };
 
         const startTime = Date.now();
 
         const messages: any = await this.zamza
-            .mongoWrapper.balrok.filter(this.getOrCreateModel(topic), {}, documentOperation, resolveOptions);
+            .mongoWrapper.balrok.filter(this.getOrCreateModel(topic), query, queryName,
+                documentOperation, resolveOptions);
+
+        // if the query is not awaited, it will run without reference to this requests lifetime
+        // we will return the cacheKey of the operation, that can be used to fetch the results
+        // on another endpoint
+        if (dontAwait) {
+            return {
+                cacheKey: messages.cacheKey,
+            };
+        }
 
         const duration = Date.now() - startTime;
         this.metrics.set("mongo_keyindex_find_query_ms", duration);

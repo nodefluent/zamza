@@ -1,5 +1,12 @@
 # zamza CHANGELOG
 
+## 2019-01-29, Version 0.34.0
+
+* added new endpoint family `/api/query`
+* **BREAKING** moved all query related fetch resouces from `/api/fetch` to `/api/query`
+* **BREAKING** renamed endpoint `/api/fetch/:topic/query/find` to `/api/query/:topic/filter`
+* added async "call-ability" for `/api/query/:topic/filter`
+
 ## 2019-01-28, Version 0.33.0
 
 * replaced un-index query for querable tables with balroks heavy lifting logic

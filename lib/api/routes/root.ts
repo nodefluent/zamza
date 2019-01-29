@@ -31,6 +31,7 @@ const routeRoot = (zamza: Zamza) => {
                 "/api/produce",
                 "/api/manage",
                 "/api/state",
+                "/api/query",
             ],
         });
     });

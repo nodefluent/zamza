@@ -158,15 +158,19 @@ schema based on a single latest message from the given topic.
 ### Running advanced queries to find or count messages
 
 Zamza enables you to search for messages in topics based on their payload fields.
-You can pass a query object to `POST /api/fetch/:topic/query/find` 
+You can pass a query object to `POST /api/query/:topic/filter` 
 body: `{ query: { "value.payload.customer.firstName": "Peter", "value.payload.customer.surName": "Pan" } }`.
 
 Message results will look equal to the other API message responses e.g. pagination.
 When querying messages you can provide additional parameters to customize your query: 
 
-* `limit` to limit the results, default is 512, cap is 2500 (you can omit this field)
+* `limit` to limit the results, default is 512, cap is 10500 (you can omit this field)
 * `skipToIndex` works exactly like described in the pagination API above, default is null (you can omit this field)
 * `order` order is applied when skipToIndex is used, value can be 1 or -1 (default is -1)
+* `async` boolean if the query should run separated from the http request, in case your query takes longer than your
+e.g. http timeout, default is false. In case you pass true here, your request will resolve very fast and will return a
+body `{ cacheKey: 123123123123 }`, using this cacheKey you can fetch the results from: `GET /api/query/results/:cacheKey`
+when the query is ready. You can also use `GET /api/query/queries` to get an overview of running queries (on that instance of zamza). Using `DELETE /api/query/abort/:cacheKey` you can stop a query (across all instances of zamza).
 
 Another look at the collection you are querying, for convenience:
 
