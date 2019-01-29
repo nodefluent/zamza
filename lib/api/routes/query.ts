@@ -65,7 +65,7 @@ const routeQuery = (zamza: Zamza) => {
     router.post("/:topic/filter", async (req, res) => {
 
         const {topic} = req.params;
-        const {query, limit = 512, skipToIndex = null, order = -1, async = false} = req.body;
+        const {query, limit = null, skipToIndex = null, order = -1, async = false} = req.body;
 
         if (!res.locals.access.topicAccessAllowedForRequest(req, topic)) {
             res.status(403).json({

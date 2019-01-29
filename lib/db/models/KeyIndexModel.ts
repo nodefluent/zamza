@@ -455,7 +455,7 @@ export class KeyIndexModel {
         return this.zamza.mongoWrapper.balrok.getCacheKeyResult(cacheKey);
     }
 
-    public async filterForQuery(topic: string, origQuery: any, limit: number = 512,
+    public async filterForQuery(topic: string, origQuery: any, limit: number | null = null,
                                 skipToIndex: string | null = null, order: number = -1, dontAwait: boolean = false) {
 
         const topicConfig = this.zamza.messageHandler.findConfigForTopic(topic);
@@ -475,10 +475,6 @@ export class KeyIndexModel {
 
         if (!origQuery || typeof origQuery !== "object") {
             throw new Error("query must be an object, filtering for 'dot-notated' keys.");
-        }
-
-        if (limit > 10500) {
-            throw new Error(limit + " is a huge limit size, please stay under 10500 per call.");
         }
 
         const queryId = topic + "_" +

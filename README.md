@@ -164,7 +164,7 @@ body: `{ query: { "value.payload.customer.firstName": "Peter", "value.payload.cu
 Message results will look equal to the other API message responses e.g. pagination.
 When querying messages you can provide additional parameters to customize your query: 
 
-* `limit` to limit the results, default is 512, cap is 10500 (you can omit this field)
+* `limit` to limit the results, default is null (unlimited) (you can omit this field) (will limit scanned documents not collected)
 * `skipToIndex` works exactly like described in the pagination API above, default is null (you can omit this field)
 * `order` order is applied when skipToIndex is used, value can be 1 or -1 (default is -1)
 * `async` boolean if the query should run separated from the http request, in case your query takes longer than your
