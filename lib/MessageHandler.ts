@@ -21,6 +21,10 @@ const INTERNAL_TOPICS = {
     REPLAY_TOPIC,
 };
 
+// we dont even store messages that wont live more than 2 minutes
+// due to their age and retention on a topicConfig (usually occures during replays)
+const MESSAGE_AGE_THRESHOLD = 2 * 60 * 1000;
+
 export { INTERNAL_TOPICS };
 
 export default class MessageHandler {
@@ -218,6 +222,27 @@ export default class MessageHandler {
         // the time of db insertion will be used to determine ttl
         const messageHasTimestamp = (message as any).timestamp && typeof (message as any).timestamp === "number";
         const timeOfStoring = moment().valueOf();
+
+        // in case a message will be stored and immediately deleted due to
+        // retention and message age (likely replay)
+        if (messageHasTimestamp &&
+            (topicConfig.cleanupPolicy === "compact_and_delete" || topicConfig.cleanupPolicy === "delete")) {
+
+                if (moment((message as any).timestamp)
+                    .add(topicConfig.retentionMs, "milliseconds")
+                    .diff(moment()) < MESSAGE_AGE_THRESHOLD) {
+
+                        this.metrics.inc("processed_messages_skipped");
+
+                        if (this.hooksEnabled && fromStream) {
+                            // always ensure to await this
+                            await this.hookDealer.handleMessage(message);
+                        }
+
+                        this.metrics.inc("processed_messages_success");
+                        return true;
+                    }
+        }
 
         // try to strip the value as raw, yet parsed as possible before storing
         // happy path here is to turn a message buffer into its JSON object and store as such

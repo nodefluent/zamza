@@ -1,5 +1,11 @@
 # zamza CHANGELOG
 
+## 2019-03-07, Version 0.36.0
+
+* upgraded dependencies
+* added logic to skip messages on retention based topics if they are too old
+* added logic to handle instant produce on hook delivery on response status code 205
+
 ## 2019-01-29, Version 0.34.0 - 0.35.0
 
 * added new endpoint family `/api/query`

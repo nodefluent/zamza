@@ -11,6 +11,7 @@ import HookClient from "./HookClient";
 import RetryProducer from "./kafka/RetryProducer";
 import { INTERNAL_TOPICS } from "./MessageHandler";
 import { HookModel } from "./db/models";
+import Producer from "./kafka/Producer";
 
 const DEFAULT_TIMEOUT = 1500;
 const DEFAUT_RETRIES = 0;
@@ -31,8 +32,9 @@ export default class HookDealer {
     private initialHooksLoaded: boolean = false;
     private topicSubscriptionMap: {[key: string]: Array<Hook & { ignoreReplay: boolean }>};
     private oldTopicSubscriptionLength: number = 0;
-    private hookClient: HookClient;
-    private retryProducer: RetryProducer;
+    private readonly hookClient: HookClient;
+    private readonly retryProducer: RetryProducer;
+    private readonly producer: Producer;
 
     constructor(zamza: Zamza) {
         this.metrics = zamza.metrics;
@@ -59,6 +61,7 @@ export default class HookDealer {
         this.hookModel = zamza.mongoWrapper.getHook();
         this.hookClient = new HookClient(zamza);
         this.retryProducer = zamza.retryProducer;
+        this.producer = zamza.producer;
         this.topicSubscriptionMap = {};
     }
 
@@ -190,7 +193,32 @@ export default class HookDealer {
             options.headers[mappedHook.authorizationHeader] = mappedHook.authorizationValue;
         }
 
-        await this.hookClient.call(options, 200);
+        const { status, body: responseBody } = await this.hookClient.call(options);
+
+        // simple delivery hook
+        if (status === 200) {
+            return;
+        }
+
+        // hook delivered, however a message should be produced in return
+        if (status === 205) {
+
+            try {
+                const {
+                    topic,
+                    partition,
+                    key,
+                    value,
+                } = JSON.parse(responseBody);
+                await this.producer.produceMessage(topic, partition, key, value);
+            } catch (error) {
+                debug("Failed to produce message on 205 hook response: "
+                    + error.message + ", " + mappedHook.endpoint);
+            }
+            return;
+        }
+
+        throw new Error(`Expected status code did not match 200 or 205 ${status}.`);
     }
 
     public async handleMessage(message: KafkaMessage): Promise<boolean> {

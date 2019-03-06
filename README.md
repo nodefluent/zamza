@@ -218,8 +218,18 @@ you can provide additional fields `authorizationHeader, authorizationValue, disa
 * you can update a configured hook by calling `PUT /api/config/hook`
 * you can remove a hook by calling `DELETE /api/config/hook/name/:name`
 
-Please note that any changes on the hook resource will take a few seconds to be polled and applied to all zamza instances,
+**Please note** that any changes on the hook resource will take a few seconds to be polled and applied to all zamza instances,
 just like topic-config changes.
+
+**Also note** that the hook endpoint should always return status code `200` in case of a successfull processing.
+However if you return other status codes or the hook requests fails due to network errors (depending on your config)
+the hook will be retried after a few seconds.
+
+**There is an additional used status code** for hook responses `205`. In this case zamza will try to parse the following
+response body `{topic, partition, key, value}`. Passing a correct response body and status code 205 will result in
+an additional produced message by zamza to the provided topic. The idea of this concept should allow you to subscribe 
+services to a given topic, transfer the messages on received hook calls and pipe them to another (or equal) topic
+while providing the hook response.
 
 ### Doing topic replays for hook subscriptions
 

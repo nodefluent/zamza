@@ -24,17 +24,12 @@ export default class HookClient {
         }, 45000);
     }
 
-    public call(options: any, expectedStatusCode: number = 200) {
+    public call(options: any): any {
         return new Bluebird((resolve, reject) => {
             request(options, (error: Error, response: any, body: any) => {
 
                 if (error) {
                     return reject(error);
-                }
-
-                if (expectedStatusCode !== response.statusCode) {
-                    return reject(new Error(`Expected status code not matched`
-                        + `${expectedStatusCode} !== ${response.statusCode}.`));
                 }
 
                 resolve({
