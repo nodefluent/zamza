@@ -1,5 +1,9 @@
 # zamza CHANGELOG
 
+## 2019-03-08, Version 0.37.0
+
+* added bigquery schema converter
+
 ## 2019-03-07, Version 0.36.0
 
 * upgraded dependencies

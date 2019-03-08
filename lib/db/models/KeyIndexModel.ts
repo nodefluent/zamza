@@ -6,6 +6,7 @@ import * as mongoose from "mongoose";
 import * as Bluebird from "bluebird";
 import * as toJSONSchema from "to-json-schema";
 import * as R from "ramda";
+import * as bigqueryJsonSchema from "jsonschema-bigquery";
 
 import { KeyIndex, TopicMetadata } from "../../interfaces";
 import Zamza from "../../Zamza";
@@ -612,6 +613,11 @@ export class KeyIndexModel {
         } catch (error) {
             throw new Error("Failed to create schema for topic " + topic + ", " + error.message);
         }
+    }
+
+    public async analyseSingleMessageBigQuerySchema(topic: string) {
+        const jsonSchema = await this.analyseSingleMessageJSONSchema(topic);
+        return bigqueryJsonSchema.run(jsonSchema);
     }
 
     public async analyseJSONSchema(topic: string) {

@@ -50,6 +50,7 @@ const routeInfo = (zamza: Zamza) => {
 
                 "/api/info/schema/:topic/json",
                 "/api/info/single-schema/:topic/json",
+                "/api/info/single-schema/:topic/bigquery",
             ],
         });
     });
@@ -344,6 +345,30 @@ const routeInfo = (zamza: Zamza) => {
             }
 
             const schema = await keyIndexModel.analyseSingleMessageJSONSchema(topic);
+            res.status(200).json({ topic, schema });
+        } catch (error) {
+            res.status(500).json({
+                error: "An error occured " + error.message,
+            });
+        }
+    });
+
+    router.get("/single-schema/:topic/bigquery", async (req, res) => {
+
+        try {
+
+            const topic = req.params.topic;
+
+            const topicConfig = messageHandler.findConfigForTopic(topic);
+            if (!topicConfig) {
+                res.status(400).json({
+                    error: "Topic metadata (schema) can only be provided for configured topics." +
+                        " Please wait a few seconds after configuring a topic.",
+                });
+                return;
+            }
+
+            const schema = await keyIndexModel.analyseSingleMessageBigQuerySchema(topic);
             res.status(200).json({ topic, schema });
         } catch (error) {
             res.status(500).json({
