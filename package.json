@@ -57,7 +57,7 @@
     "debug": "~4.1.1",
     "express": "~4.16.4",
     "jsonschema-bigquery": "^1.0.0",
-    "moment": "~2.24.0",
+    "moment": "~2.29.2",
     "mongoose": "~5.4.17",
     "murmurhash": "~0.0.2",
     "prom-client": "~11.2.1",
