@@ -55,7 +55,7 @@
     "commander": "~2.19.0",
     "cors": "~2.8.5",
     "debug": "~4.1.1",
-    "express": "~4.16.4",
+    "express": "~4.17.3",
     "jsonschema-bigquery": "^1.0.0",
     "moment": "~2.24.0",
     "mongoose": "~5.4.17",
